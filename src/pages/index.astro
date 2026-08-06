@@ -1,73 +1,51 @@
 ---
-import { supabase } from '../lib/supabase';
-
-// Fetch sesi latihan terdekat dari Supabase
-const { data: currentSession } = await supabase
-  .from('sessions')
-  .select('id, title, session_date, max_capacity')
-  .gte('session_date', new Date().toISOString().split('T')[0])
-  .order('session_date', { ascending: true })
-  .limit(1)
-  .single();
-
-let totalRegistered = 0;
-if (currentSession) {
-  const { count } = await supabase
-    .from('registrations')
-    .select('*', { count: 'exact', head: true })
-    .eq('session_id', currentSession.id);
-  totalRegistered = count || 0;
-}
-
-const isFull = currentSession ? totalRegistered >= currentSession.max_capacity : true;
-const url = new URL(Astro.request.url);
-const presetTier = url.searchParams.get('tier') || 'public';
+// index.astro sederhana tanpa SSR/Database dulu
 ---
 
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Latihan Reguler Blue Wave</title>
+  <title>Blue Wave Running Club</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background-color: #111827;
+      color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .card {
+      background-color: #1f2937;
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid #374151;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 { color: #60a5fa; margin-bottom: 0.5rem; }
+    p { color: #9ca3af; margin-bottom: 1.5rem; }
+    .status {
+      background-color: #10b98120;
+      color: #34d399;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      display: inline-block;
+      font-size: 0.875rem;
+    }
+  </style>
 </head>
-<body style="font-family: sans-serif; padding: 20px; max-width: 500px; margin: auto;">
-  <h1>Blue Wave Running Club</h1>
-  <p>Pendaftaran Latihan Reguler</p>
-
-  {currentSession ? (
-    <div>
-      <h3>{currentSession.title}</h3>
-      <p>Tanggal: {currentSession.session_date}</p>
-      <p>Kuota Terisi: {totalRegistered} / {currentSession.max_capacity}</p>
-
-      {!isFull ? (
-        <form action="/api/register" method="POST" style="display: flex; flex-direction: column; gap: 10px;">
-          <input type="hidden" name="session_id" value={currentSession.id} />
-          
-          <label>Nama Lengkap:
-            <input type="text" name="full_name" required style="width: 100%;" />
-          </label>
-          
-          <label>Nomor WhatsApp:
-            <input type="tel" name="phone_number" required style="width: 100%;" />
-          </label>
-          
-          <label>Kategori Peserta:
-            <select name="tier" style="width: 100%;">
-              <option value="public" selected={presetTier === 'public'}>Public</option>
-              <option value="community_internal" selected={presetTier === 'community_internal'}>Community Partner</option>
-              <option value="bluewave_runner" selected={presetTier === 'bluewave_runner'}>Blue Wave Core</option>
-            </select>
-          </label>
-
-          <button type="submit" style="padding: 10px; cursor: pointer;">Daftar Latihan</button>
-        </form>
-      ) : (
-        <p style="color: red;">Mohon maaf, kuota latihan sesi ini penuh!</p>
-      )}
+<body>
+  <div class="card">
+    <h1>Blue Wave Running Club</h1>
+    <p>Sistem Pendaftaran Latihan Reguler</p>
+    <div class="status">
+      ✓ Server Astro & Cloudflare Pages Berhasil Terhubung!
     </div>
-  ) : (
-    <p>Belum ada jadwal latihan aktif.</p>
-  )}
+  </div>
 </body>
 </html>
