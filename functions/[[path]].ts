@@ -1,7 +1,4 @@
-interface EventContext {
-  next: () => Promise<Response>;
-}
+// @ts-ignore Hasil build server Astro
+import { onRequest as astroHandler } from '../dist/server/entry.mjs';
 
-export async function onRequest(context: EventContext) {
-  return context.next();
-}
+export const onRequest = astroHandler;
