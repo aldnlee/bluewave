@@ -1,0 +1,5 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "bluewave-registration",
+  "pages_build_output_dir": "./dist"
+}
