@@ -12,6 +12,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/cloudflare": "^14.1.7",
     "@supabase/supabase-js": "^2.112.1",
     "astro": "^7.1.6"
   }
