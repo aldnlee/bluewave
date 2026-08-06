@@ -12,6 +12,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return new Response('Data tidak lengkap', { status: 400 });
   }
 
+  // Panggil RPC Stored Procedure Supabase
   const { data, error } = await supabase.rpc('register_bluewave_session', {
     p_session_id: sessionId,
     p_full_name: fullName,
@@ -23,5 +24,6 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return new Response(data?.message || 'Gagal mendaftar', { status: 400 });
   }
 
-  return redirect(`/?status=success`);
+  // Redirect kembali ke halaman utama dengan status sukses
+  return redirect('/?status=success');
 };
