@@ -1,5 +1,6 @@
 ---
 import { getSupabase } from '../lib/supabase';
+import '../styles/global.css';
 
 let message = '';
 let isSuccess = false;
@@ -7,7 +8,7 @@ let isSuccess = false;
 // Ambil runtime environment dari Cloudflare adapter jika tersedia
 const runtimeEnv = (Astro.locals as any)?.runtime?.env;
 
-// Fetch daftar sesi aktif dari Supabase untuk dropdown pilihan
+// Fetch daftar sesi aktif dari Supabase untuk pilihan dropdown
 let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
 
 try {
@@ -19,9 +20,11 @@ try {
 
   if (!error && data) {
     sessions = data;
+  } else if (error) {
+    console.error('Error fetching sessions:', error.message);
   }
 } catch (e: any) {
-  console.error('Error fetching sessions:', e.message);
+  console.error('System error fetching sessions:', e.message);
 }
 
 // Tangkap Form Submission di Server (SSR)
@@ -97,9 +100,9 @@ if (Astro.request.method === 'POST') {
             required 
             class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
           >
-            <option value="">-- Pilih Sesi --</option>
+            <option value="" class="bg-slate-800 text-slate-300">-- Pilih Sesi --</option>
             {sessions.map((session) => (
-              <option value={session.id}>
+              <option value={session.id} class="bg-slate-800 text-slate-100">
                 {session.title} ({session.session_date})
               </option>
             ))}
@@ -143,9 +146,9 @@ if (Astro.request.method === 'POST') {
             name="tier" 
             class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
           >
-            <option value="public">Umum / Public</option>
-            <option value="community_internal">Internal Komunitas</option>
-            <option value="bluewave_runner">Blue Wave Runner</option>
+            <option value="public" class="bg-slate-800 text-slate-100">Umum / Public</option>
+            <option value="community_internal" class="bg-slate-800 text-slate-100">Internal Komunitas</option>
+            <option value="bluewave_runner" class="bg-slate-800 text-slate-100">Blue Wave Runner</option>
           </select>
         </div>
 
