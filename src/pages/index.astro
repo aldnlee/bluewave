@@ -5,6 +5,7 @@ import '../styles/global.css';
 let message = '';
 let isSuccess = false;
 
+// Safe extraction runtime environment Cloudflare / Vite Local
 const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 const supabase = getSupabase(runtimeEnv);
@@ -23,9 +24,9 @@ if (Astro.request.method === 'POST') {
     const tier = formData.get('tier')?.toString() || 'public';
 
     if (!sessionId || sessionId === '') {
-      message = 'Pilih sesi latihan terlebih dahulu!';
+      message = 'Silakan pilih sesi latihan terlebih dahulu!';
     } else if (fullName && phoneNumber && email) {
-      // Panggil Stored Procedure
+      // Panggil Stored Procedure register_bluewave_session
       const { data, error } = await supabase.rpc('register_bluewave_session', {
         p_session_id: sessionId,
         p_full_name: fullName,
@@ -49,7 +50,7 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-// Fetch daftar sesi aktif dari Supabase (Selalu dipanggil)
+// Fetch daftar sesi aktif dari Supabase
 try {
   const { data, error } = await supabase
     .from('sessions')
@@ -83,6 +84,7 @@ try {
         </div>
       </div>
 
+      <!-- Alert Message -->
       {message && (
         <div class={`p-4 rounded-xl mb-6 text-sm font-medium border ${
           isSuccess 
@@ -115,7 +117,7 @@ try {
           </select>
         </div>
 
-        <!-- Identitas -->
+        <!-- Nama Lengkap -->
         <div>
           <label for="full_name" class="block text-sm font-medium mb-2 text-slate-300">
             Nama Lengkap <span class="text-rose-400">*</span>
@@ -130,6 +132,7 @@ try {
           />
         </div>
 
+        <!-- No HP / WhatsApp -->
         <div>
           <label for="phone_number" class="block text-sm font-medium mb-2 text-slate-300">
             No. Telpon / WhatsApp <span class="text-rose-400">*</span>
@@ -144,6 +147,7 @@ try {
           />
         </div>
 
+        <!-- Email -->
         <div>
           <label for="email" class="block text-sm font-medium mb-2 text-slate-300">
             Alamat Email <span class="text-rose-400">*</span>
@@ -222,7 +226,7 @@ try {
 
     </div>
 
-    <!-- CLIENT INTERACTIVE SCRIPT -->
+    <!-- CLIENT-SIDE LOGIC -->
     <script>
       const waRadios = document.querySelectorAll<HTMLInputElement>('.wa-radio');
       const confirmRadios = document.querySelectorAll<HTMLInputElement>('.wa-confirm-radio');
