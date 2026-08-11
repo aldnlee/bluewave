@@ -4,6 +4,7 @@ import '../styles/global.css';
 
 let message = '';
 let isSuccess = false;
+let debugError = '';
 
 // Safe extraction untuk runtime environment Cloudflare / Vite Local
 const locals = Astro.locals as any;
@@ -20,12 +21,17 @@ try {
     .order('session_date', { ascending: true });
 
   if (error) {
-    console.error('Supabase Query Error:', error.message);
+    debugError = `Supabase Query Error: ${error.message} (Code: ${error.code})`;
+    console.error('Supabase Query Error:', error);
   } else if (data) {
     sessions = data;
+    if (sessions.length === 0) {
+      debugError = 'Query berhasil, tetapi tabel "sessions" mengembalikan 0 baris data.';
+    }
   }
 } catch (e: any) {
-  console.error('Init Error:', e.message);
+  debugError = `Init Error: ${e.message}`;
+  console.error('Init Error:', e);
 }
 
 // Tangkap Form Submission di Server (SSR)
@@ -51,7 +57,6 @@ if (Astro.request.method === 'POST') {
       if (error) {
         message = `Gagal memproses pendaftaran: ${error.message}`;
       } else if (data && !data.success) {
-        // Pesan batas kuota penuh atau nomor HP ganda dari Stored Procedure
         message = data.message;
       } else if (data && data.success) {
         message = data.message || 'Pendaftaran berhasil!';
@@ -75,11 +80,20 @@ if (Astro.request.method === 'POST') {
   <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
     <div class="max-w-lg w-full bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-slate-700">
       
-      <div class="text-center mb-8">
+      <div class="text-center mb-6">
         <h1 class="text-3xl font-extrabold text-blue-400 tracking-tight">BLUE WAVE</h1>
         <p class="text-slate-400 text-sm mt-1">Form Pendaftaran Sesi Latihan Reguler</p>
       </div>
 
+      <!-- DEBUG MESSAGE BOX (Hanya Muncul Jika Ada Error/Data Kosong) -->
+      {debugError && (
+        <div class="p-3.5 bg-amber-500/15 border border-amber-500/40 rounded-xl mb-6 text-amber-300 text-xs font-mono break-all">
+          <p class="font-semibold mb-1 text-amber-400">⚠️ Debug Info:</p>
+          {debugError}
+        </div>
+      )}
+
+      <!-- ALERT MESSAGE USER -->
       {message && (
         <div class={`p-4 rounded-xl mb-6 text-sm font-medium border ${
           isSuccess 
