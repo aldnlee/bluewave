@@ -7,35 +7,25 @@ let isSuccess = false;
 
 const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
+const supabase = getSupabase(runtimeEnv);
 
 let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
 
-try {
-  const supabase = getSupabase(runtimeEnv);
-  const { data, error } = await supabase
-    .from('sessions')
-    .select('id, title, session_date, max_capacity')
-    .order('session_date', { ascending: true });
-
-  if (!error && data) {
-    sessions = data;
-  }
-} catch (e: any) {
-  console.error('Init Error:', e.message);
-}
-
+// Tangkap Form Submission di Server (SSR)
 if (Astro.request.method === 'POST') {
   try {
-    const supabase = getSupabase(runtimeEnv);
     const formData = await Astro.request.formData();
 
-    const sessionId = formData.get('session_id')?.toString();
-    const fullName = formData.get('full_name')?.toString();
-    const phoneNumber = formData.get('phone_number')?.toString();
-    const email = formData.get('email')?.toString();
+    const sessionId = formData.get('session_id')?.toString()?.trim();
+    const fullName = formData.get('full_name')?.toString()?.trim();
+    const phoneNumber = formData.get('phone_number')?.toString()?.trim();
+    const email = formData.get('email')?.toString()?.trim();
     const tier = formData.get('tier')?.toString() || 'public';
 
-    if (sessionId && fullName && phoneNumber) {
+    if (!sessionId || sessionId === '') {
+      message = 'Pilih sesi latihan terlebih dahulu!';
+    } else if (fullName && phoneNumber && email) {
+      // Panggil Stored Procedure
       const { data, error } = await supabase.rpc('register_bluewave_session', {
         p_session_id: sessionId,
         p_full_name: fullName,
@@ -57,6 +47,22 @@ if (Astro.request.method === 'POST') {
   } catch (err: any) {
     message = `Terjadi kesalahan sistem: ${err.message}`;
   }
+}
+
+// Fetch daftar sesi aktif dari Supabase (Selalu dipanggil)
+try {
+  const { data, error } = await supabase
+    .from('sessions')
+    .select('id, title, session_date, max_capacity')
+    .order('session_date', { ascending: true });
+
+  if (!error && data) {
+    sessions = data;
+  } else if (error) {
+    console.error('Error fetching sessions:', error.message);
+  }
+} catch (e: any) {
+  console.error('Init Error:', e.message);
 }
 ---
 
@@ -89,7 +95,7 @@ if (Astro.request.method === 'POST') {
 
       <form method="POST" id="registrationForm" class="space-y-5">
         
-        <!-- SECTION 1: Form Identitas -->
+        <!-- Pilihan Sesi -->
         <div>
           <label for="session_id" class="block text-sm font-medium mb-2 text-slate-300">
             Pilih Sesi Latihan <span class="text-rose-400">*</span>
@@ -109,6 +115,7 @@ if (Astro.request.method === 'POST') {
           </select>
         </div>
 
+        <!-- Identitas -->
         <div>
           <label for="full_name" class="block text-sm font-medium mb-2 text-slate-300">
             Nama Lengkap <span class="text-rose-400">*</span>
@@ -168,7 +175,7 @@ if (Astro.request.method === 'POST') {
           </div>
         </div>
 
-        <!-- SECTION 2: JOIN BLUE WAVE GROUP (Hidden by default) -->
+        <!-- SECTION 2: JOIN BLUE WAVE GROUP -->
         <div id="section2JoinGroup" class="hidden p-4 bg-slate-700/40 border border-blue-500/30 rounded-xl space-y-3 transition-all">
           <h3 class="text-base font-bold text-blue-400">Join Blue Wave Group</h3>
           <p class="text-xs text-slate-300 leading-relaxed">
@@ -186,7 +193,6 @@ if (Astro.request.method === 'POST') {
             </a>
           </div>
 
-          <!-- PERTANYAAN CONFIRMATION SETELAH JOIN -->
           <div class="pt-3 border-t border-slate-600/50">
             <label class="block text-xs font-semibold mb-2 text-slate-200">
               Apakah Anda Sudah Join? <span class="text-rose-400">*</span>
@@ -216,7 +222,7 @@ if (Astro.request.method === 'POST') {
 
     </div>
 
-    <!-- LOGIKA INTERAKTIF CLIENT-SIDE -->
+    <!-- CLIENT INTERACTIVE SCRIPT -->
     <script>
       const waRadios = document.querySelectorAll<HTMLInputElement>('.wa-radio');
       const confirmRadios = document.querySelectorAll<HTMLInputElement>('.wa-confirm-radio');
@@ -232,7 +238,6 @@ if (Astro.request.method === 'POST') {
           submitBtn.disabled = false;
         } else if (selectedWa === 'belum') {
           section2?.classList.remove('hidden');
-          // Jika belum join di section 2, tombol submit baru aktif jika memilih "Sudah" di konfirmasi join
           if (selectedConfirm === 'sudah') {
             submitBtn.disabled = false;
           } else {
@@ -244,7 +249,6 @@ if (Astro.request.method === 'POST') {
       waRadios.forEach((radio) => radio.addEventListener('change', updateFormFlow));
       confirmRadios.forEach((radio) => radio.addEventListener('change', updateFormFlow));
 
-      // Initial state check
       updateFormFlow();
     </script>
   </body>
