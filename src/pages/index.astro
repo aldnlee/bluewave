@@ -4,15 +4,12 @@ import '../styles/global.css';
 
 let message = '';
 let isSuccess = false;
-let debugError = '';
 
-// Safe extraction untuk runtime environment Cloudflare / Vite Local
 const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 
 let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
 
-// Fetch daftar sesi aktif dari Supabase
 try {
   const supabase = getSupabase(runtimeEnv);
   const { data, error } = await supabase
@@ -20,21 +17,13 @@ try {
     .select('id, title, session_date, max_capacity')
     .order('session_date', { ascending: true });
 
-  if (error) {
-    debugError = `Supabase Query Error: ${error.message} (Code: ${error.code})`;
-    console.error('Supabase Query Error:', error);
-  } else if (data) {
+  if (!error && data) {
     sessions = data;
-    if (sessions.length === 0) {
-      debugError = 'Query berhasil, tetapi tabel "sessions" mengembalikan 0 baris data.';
-    }
   }
 } catch (e: any) {
-  debugError = `Init Error: ${e.message}`;
-  console.error('Init Error:', e);
+  console.error('Init Error:', e.message);
 }
 
-// Tangkap Form Submission di Server (SSR)
 if (Astro.request.method === 'POST') {
   try {
     const supabase = getSupabase(runtimeEnv);
@@ -43,10 +32,10 @@ if (Astro.request.method === 'POST') {
     const sessionId = formData.get('session_id')?.toString();
     const fullName = formData.get('full_name')?.toString();
     const phoneNumber = formData.get('phone_number')?.toString();
+    const email = formData.get('email')?.toString();
     const tier = formData.get('tier')?.toString() || 'public';
 
     if (sessionId && fullName && phoneNumber) {
-      // Panggil Stored Procedure untuk registrasi aman (Atomic Check & Insert)
       const { data, error } = await supabase.rpc('register_bluewave_session', {
         p_session_id: sessionId,
         p_full_name: fullName,
@@ -75,25 +64,19 @@ if (Astro.request.method === 'POST') {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pendaftaran Sesi Latihan Blue Wave</title>
+    <title>BLUE WAVE REGISTRATION</title>
   </head>
   <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
-    <div class="max-w-lg w-full bg-slate-800/80 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-slate-700">
+    <div class="max-w-lg w-full bg-slate-800/90 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-2xl border border-slate-700">
       
+      <!-- Header & Warning Note -->
       <div class="text-center mb-6">
-        <h1 class="text-3xl font-extrabold text-blue-400 tracking-tight">BLUE WAVE</h1>
-        <p class="text-slate-400 text-sm mt-1">Form Pendaftaran Sesi Latihan Reguler</p>
+        <h1 class="text-3xl font-black text-blue-400 tracking-tight">BLUE WAVE REGISTRATION</h1>
+        <div class="mt-4 p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-200 text-left leading-relaxed">
+          💡 <strong>Catatan:</strong> Mohon untuk tidak mengubah nama, nomor telepon, dan alamat email pada setiap proses registrasi ulang agar mempermudah proses verifikasi data XP.
+        </div>
       </div>
 
-      <!-- DEBUG MESSAGE BOX (Hanya Muncul Jika Ada Error/Data Kosong) -->
-      {debugError && (
-        <div class="p-3.5 bg-amber-500/15 border border-amber-500/40 rounded-xl mb-6 text-amber-300 text-xs font-mono break-all">
-          <p class="font-semibold mb-1 text-amber-400">⚠️ Debug Info:</p>
-          {debugError}
-        </div>
-      )}
-
-      <!-- ALERT MESSAGE USER -->
       {message && (
         <div class={`p-4 rounded-xl mb-6 text-sm font-medium border ${
           isSuccess 
@@ -104,7 +87,9 @@ if (Astro.request.method === 'POST') {
         </div>
       )}
 
-      <form method="POST" class="space-y-5">
+      <form method="POST" id="registrationForm" class="space-y-5">
+        
+        <!-- SECTION 1: Form Identitas -->
         <div>
           <label for="session_id" class="block text-sm font-medium mb-2 text-slate-300">
             Pilih Sesi Latihan <span class="text-rose-400">*</span>
@@ -133,14 +118,14 @@ if (Astro.request.method === 'POST') {
             id="full_name" 
             name="full_name" 
             required 
-            placeholder="Contoh: Alex Rian"
+            placeholder="Masukkan Nama Lengkap"
             class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 placeholder-slate-500"
           />
         </div>
 
         <div>
           <label for="phone_number" class="block text-sm font-medium mb-2 text-slate-300">
-            Nomor WhatsApp / HP <span class="text-rose-400">*</span>
+            No. Telpon / WhatsApp <span class="text-rose-400">*</span>
           </label>
           <input 
             type="tel" 
@@ -153,28 +138,114 @@ if (Astro.request.method === 'POST') {
         </div>
 
         <div>
-          <label for="tier" class="block text-sm font-medium mb-2 text-slate-300">
-            Kategori Peserta
+          <label for="email" class="block text-sm font-medium mb-2 text-slate-300">
+            Alamat Email <span class="text-rose-400">*</span>
           </label>
-          <select 
-            id="tier" 
-            name="tier" 
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
-          >
-            <option value="public" class="bg-slate-800 text-slate-100">Umum / Public</option>
-            <option value="community_internal" class="bg-slate-800 text-slate-100">Internal Komunitas</option>
-            <option value="bluewave_runner" class="bg-slate-800 text-slate-100">Blue Wave Runner</option>
-          </select>
+          <input 
+            type="email" 
+            id="email" 
+            name="email" 
+            required 
+            placeholder="nama@email.com"
+            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 placeholder-slate-500"
+          />
         </div>
 
+        <!-- PERTANYAAN GROUP WHATSAPP -->
+        <div class="pt-2 border-t border-slate-700/60">
+          <label class="block text-sm font-semibold mb-3 text-slate-200">
+            Apakah Anda sudah bergabung di group Whatsapp Blue Wave? <span class="text-rose-400">*</span>
+          </label>
+          <div class="flex items-center space-x-6">
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="radio" name="joined_wa" value="sudah" class="wa-radio w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-500" required />
+              <span class="text-sm font-medium text-slate-200">Sudah</span>
+            </label>
+            <label class="flex items-center space-x-2 cursor-pointer">
+              <input type="radio" name="joined_wa" value="belum" class="wa-radio w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-500" />
+              <span class="text-sm font-medium text-slate-200">Belum</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- SECTION 2: JOIN BLUE WAVE GROUP (Hidden by default) -->
+        <div id="section2JoinGroup" class="hidden p-4 bg-slate-700/40 border border-blue-500/30 rounded-xl space-y-3 transition-all">
+          <h3 class="text-base font-bold text-blue-400">Join Blue Wave Group</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Silakan bergabung ke grup WhatsApp Blue Wave melalui tautan di bawah ini untuk mendapatkan informasi terbaru seputar jadwal latihan, aktivitas komunitas, dan berbagai update lainnya.
+          </p>
+          <div class="pt-1">
+            <p class="text-xs font-semibold text-slate-400 mb-1">Link Grup WhatsApp Blue Wave:</p>
+            <a 
+              href="https://chat.whatsapp.com/BAWU2LQlmqCAVZvYWPmHQE" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 underline font-medium break-all"
+            >
+              https://chat.whatsapp.com/BAWU2LQlmqCAVZvYWPmHQE
+            </a>
+          </div>
+
+          <!-- PERTANYAAN CONFIRMATION SETELAH JOIN -->
+          <div class="pt-3 border-t border-slate-600/50">
+            <label class="block text-xs font-semibold mb-2 text-slate-200">
+              Apakah Anda Sudah Join? <span class="text-rose-400">*</span>
+            </label>
+            <div class="flex items-center space-x-6">
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="confirm_joined_wa" value="sudah" class="wa-confirm-radio w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-500" />
+                <span class="text-xs font-medium text-slate-200">Sudah</span>
+              </label>
+              <label class="flex items-center space-x-2 cursor-pointer">
+                <input type="radio" name="confirm_joined_wa" value="belum" class="wa-confirm-radio w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-500" />
+                <span class="text-xs font-medium text-slate-200">Belum</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- SUBMIT BUTTON -->
         <button 
           type="submit" 
-          class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition duration-150 font-semibold rounded-lg text-white shadow-lg shadow-blue-600/20 mt-2"
+          id="submitBtn"
+          class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition duration-150 font-semibold rounded-lg text-white shadow-lg shadow-blue-600/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Kirim Pendaftaran
         </button>
       </form>
 
     </div>
+
+    <!-- LOGIKA INTERAKTIF CLIENT-SIDE -->
+    <script>
+      const waRadios = document.querySelectorAll<HTMLInputElement>('.wa-radio');
+      const confirmRadios = document.querySelectorAll<HTMLInputElement>('.wa-confirm-radio');
+      const section2 = document.getElementById('section2JoinGroup');
+      const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+
+      function updateFormFlow() {
+        const selectedWa = document.querySelector<HTMLInputElement>('.wa-radio:checked')?.value;
+        const selectedConfirm = document.querySelector<HTMLInputElement>('.wa-confirm-radio:checked')?.value;
+
+        if (selectedWa === 'sudah') {
+          section2?.classList.add('hidden');
+          submitBtn.disabled = false;
+        } else if (selectedWa === 'belum') {
+          section2?.classList.remove('hidden');
+          // Jika belum join di section 2, tombol submit baru aktif jika memilih "Sudah" di konfirmasi join
+          if (selectedConfirm === 'sudah') {
+            submitBtn.disabled = false;
+          } else {
+            submitBtn.disabled = true;
+          }
+        }
+      }
+
+      waRadios.forEach((radio) => radio.addEventListener('change', updateFormFlow));
+      confirmRadios.forEach((radio) => radio.addEventListener('change', updateFormFlow));
+
+      // Initial state check
+      updateFormFlow();
+    </script>
   </body>
 </html>
