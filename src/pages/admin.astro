@@ -1,0 +1,227 @@
+---
+import { getSupabase } from '../lib/supabase';
+import '../styles/global.css';
+
+const locals = Astro.locals as any;
+const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
+const supabase = getSupabase(runtimeEnv);
+
+let sessions: Array<{ id: string; title: string; session_date: string }> = [];
+let registrations: Array<{
+  id: string;
+  full_name: string;
+  phone_number: string;
+  tier: string;
+  is_checked_in: boolean;
+  checked_in_at: string;
+  sessions: { title: string; session_date: string } | null;
+}> = [];
+
+let message = '';
+
+// Handle Action Toggle Check-In via Server POST
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const regId = formData.get('registration_id')?.toString();
+    const currentStatus = formData.get('current_status') === 'true';
+
+    if (regId) {
+      const { data, error } = await supabase.rpc('toggle_check_in', {
+        p_registration_id: regId,
+        p_status: !currentStatus,
+      });
+
+      if (error) {
+        message = `Gagal: ${error.message}`;
+      } else if (data && data.success) {
+        message = !currentStatus ? 'Berhasil Check-In!' : 'Check-In dibatalkan.';
+      }
+    }
+  } catch (err: any) {
+    message = `Error: ${err.message}`;
+  }
+}
+
+// Fetch Sesi & Seluruh Data Peserta
+try {
+  const { data: sessionData } = await supabase
+    .from('sessions')
+    .select('id, title, session_date')
+    .order('session_date', { ascending: true });
+
+  if (sessionData) sessions = sessionData;
+
+  const { data: regData, error } = await supabase
+    .from('registrations')
+    .select(`
+      id,
+      full_name,
+      phone_number,
+      tier,
+      is_checked_in,
+      checked_in_at,
+      sessions (title, session_date)
+    `)
+    .order('created_at', { ascending: false });
+
+  if (regData) registrations = regData as any;
+} catch (e: any) {
+  console.error('Error Admin Fetch:', e.message);
+}
+---
+
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - Blue Wave Check-In</title>
+  </head>
+  <body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
+    <div class="max-w-6xl mx-auto space-y-6">
+      
+      <!-- Top Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+        <div>
+          <h1 class="text-2xl font-black text-blue-400">BLUE WAVE ADMIN</h1>
+          <p class="text-xs text-slate-400 mt-1">Dashboard Re-Registration & Check-In On-Site</p>
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <div class="bg-slate-700 px-4 py-2 rounded-xl text-center border border-slate-600">
+            <span class="block text-xs text-slate-400 font-medium">Total Peserta</span>
+            <span class="text-lg font-bold text-white">{registrations.length}</span>
+          </div>
+          <div class="bg-emerald-500/10 border border-emerald-500/30 px-4 py-2 rounded-xl text-center">
+            <span class="block text-xs text-emerald-400 font-medium">Checked-In</span>
+            <span class="text-lg font-bold text-emerald-400">
+              {registrations.filter(r => r.is_checked_in).length}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {message && (
+        <div class="p-4 bg-blue-500/10 border border-blue-500/30 text-blue-300 rounded-xl text-sm font-medium">
+          {message}
+        </div>
+      )}
+
+      <!-- Filter & Search Bar -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <div class="md:col-span-2">
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="🔍 Cari Nama atau No. HP Peserta..." 
+            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          />
+        </div>
+        <div>
+          <select 
+            id="sessionFilter" 
+            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            <option value="">Semua Sesi Latihan</option>
+            {sessions.map((s) => (
+              <option value={s.title}>{s.title} ({s.session_date})</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <!-- Tabel Registrasi Peserta -->
+      <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm text-slate-200">
+            <thead class="bg-slate-700/50 text-xs uppercase text-slate-400 border-b border-slate-700">
+              <tr>
+                <th class="px-6 py-4">Peserta</th>
+                <th class="px-6 py-4">Sesi</th>
+                <th class="px-6 py-4">Kategori</th>
+                <th class="px-6 py-4">Status Check-In</th>
+                <th class="px-6 py-4 text-center">Aksi</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-700/50" id="participantTable">
+              {registrations.map((reg) => (
+                <tr class="hover:bg-slate-700/30 transition participant-row" data-name={reg.full_name.toLowerCase()} data-phone={reg.phone_number} data-session={reg.sessions?.title || ''}>
+                  <td class="px-6 py-4">
+                    <div class="font-bold text-slate-100">{reg.full_name}</div>
+                    <div class="text-xs text-slate-400">{reg.phone_number}</div>
+                  </td>
+                  <td class="px-6 py-4 text-xs text-slate-300">
+                    {reg.sessions?.title || '-'}
+                  </td>
+                  <td class="px-6 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-700 text-slate-300 border border-slate-600 uppercase">
+                      {reg.tier}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4">
+                    {reg.is_checked_in ? (
+                      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Checked-In
+                      </span>
+                    ) : (
+                      <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span> Belum
+                      </span>
+                    )}
+                  </td>
+                  <td class="px-6 py-4 text-center">
+                    <form method="POST">
+                      <input type="hidden" name="registration_id" value={reg.id} />
+                      <input type="hidden" name="current_status" value={reg.is_checked_in.toString()} />
+                      <button 
+                        type="submit" 
+                        class={`px-4 py-2 rounded-lg text-xs font-bold transition shadow-md ${
+                          reg.is_checked_in 
+                            ? 'bg-rose-600/20 text-rose-300 hover:bg-rose-600/40 border border-rose-500/30' 
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                        }`}
+                      >
+                        {reg.is_checked_in ? 'Batal Check-In' : 'Check-In Sekarang'}
+                      </button>
+                    </form>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Live Search Client-Side Filter -->
+    <script>
+      const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+      const sessionFilter = document.getElementById('sessionFilter') as HTMLSelectElement;
+      const rows = document.querySelectorAll<HTMLTableRowElement>('.participant-row');
+
+      function filterTable() {
+        const query = searchInput.value.toLowerCase().trim();
+        const selectedSession = sessionFilter.value;
+
+        rows.forEach((row) => {
+          const name = row.getAttribute('data-name') || '';
+          const phone = row.getAttribute('data-phone') || '';
+          const session = row.getAttribute('data-session') || '';
+
+          const matchesQuery = name.includes(query) || phone.includes(query);
+          const matchesSession = !selectedSession || session === selectedSession;
+
+          if (matchesQuery && matchesSession) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      }
+
+      searchInput?.addEventListener('input', filterTable);
+      sessionFilter?.addEventListener('change', filterTable);
+    </script>
+  </body>
+</html>
