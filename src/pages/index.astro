@@ -24,7 +24,7 @@ if (Astro.request.method === 'POST') {
     const fullName = formData.get('full_name')?.toString()?.trim();
     const phoneNumber = formData.get('phone_number')?.toString()?.trim();
     const email = formData.get('email')?.toString()?.trim();
-    const tier = formData.get('tier')?.toString() || 'public';
+    const tier = 'bluewave'; // Kategori otomatis diset ke bluewave
 
     if (!sessionId || sessionId === '') {
       message = 'Silakan pilih sesi latihan terlebih dahulu!';
@@ -166,23 +166,6 @@ try {
             placeholder="nama@email.com"
             class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 placeholder-slate-500"
           />
-        </div>
-
-        <!-- Kategori Peserta -->
-        <div>
-          <label for="tier" class="block text-sm font-medium mb-2 text-slate-300">
-            Kategori Peserta <span class="text-rose-400">*</span>
-          </label>
-          <select 
-            id="tier" 
-            name="tier" 
-            required
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
-          >
-            <option value="public" class="bg-slate-800 text-slate-100">Umum / Public</option>
-            <option value="community_internal" class="bg-slate-800 text-slate-100">Internal Komunitas</option>
-            <option value="bluewave_runner" class="bg-slate-800 text-slate-100">Blue Wave Runner</option>
-          </select>
         </div>
 
         <!-- PERTANYAAN GROUP WHATSAPP -->
