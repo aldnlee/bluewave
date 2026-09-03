@@ -6,9 +6,18 @@ const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 const supabase = getSupabase(runtimeEnv);
 
-let sessions: Array<{ id: string; title: string; session_date: string }> = [];
+let sessions: Array<{
+  id: string;
+  title: string;
+  session_date: string;
+  max_capacity: number;
+  total_registered?: number;
+  total_checked_in?: number;
+}> = [];
+
 let registrations: Array<{
   id: string;
+  session_id: string;
   full_name: string;
   phone_number: string;
   tier: string;
@@ -47,15 +56,14 @@ if (Astro.request.method === 'POST') {
 try {
   const { data: sessionData } = await supabase
     .from('sessions')
-    .select('id, title, session_date')
+    .select('id, title, session_date, max_capacity')
     .order('session_date', { ascending: true });
-
-  if (sessionData) sessions = sessionData;
 
   const { data: regData, error } = await supabase
     .from('registrations')
     .select(`
       id,
+      session_id,
       full_name,
       phone_number,
       tier,
@@ -66,6 +74,18 @@ try {
     .order('created_at', { ascending: false });
 
   if (regData) registrations = regData as any;
+
+  // Hitung jumlah pendaftar dan yang sudah check-in per sesi
+  if (sessionData) {
+    sessions = sessionData.map((s) => {
+      const sessionRegs = registrations.filter((r) => r.session_id === s.id);
+      return {
+        ...s,
+        total_registered: sessionRegs.length,
+        total_checked_in: sessionRegs.filter((r) => r.is_checked_in).length,
+      };
+    });
+  }
 } catch (e: any) {
   console.error('Error Admin Fetch:', e.message);
 }
@@ -98,6 +118,69 @@ try {
               {registrations.filter(r => r.is_checked_in).length}
             </span>
           </div>
+          <div class="bg-amber-500/10 border border-amber-500/30 px-4 py-2 rounded-xl text-center">
+            <span class="block text-xs text-amber-400 font-medium">Belum</span>
+            <span class="text-lg font-bold text-amber-400">
+              {registrations.filter(r => !r.is_checked_in).length}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- KARTU REKAP TIAP SESI LATIHAN -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">Rekap Tiap Sesi Latihan</h2>
+          <span class="text-xs text-slate-500">Klik kartu untuk filter tabel</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {sessions.map((session) => {
+            const registered = session.total_registered || 0;
+            const checkedIn = session.total_checked_in || 0;
+            const percent = session.max_capacity > 0 
+              ? Math.min(Math.round((registered / session.max_capacity) * 100), 100) 
+              : 0;
+
+            return (
+              <div 
+                class="session-card bg-slate-800/90 hover:border-blue-500/60 transition cursor-pointer p-4 rounded-xl border border-slate-700 shadow-md flex flex-col justify-between"
+                data-session-title={session.title}
+              >
+                <div>
+                  <div class="flex justify-between items-start gap-2">
+                    <h3 class="font-bold text-slate-100 text-sm">{session.title}</h3>
+                    <span class="text-[11px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">
+                      {session.session_date}
+                    </span>
+                  </div>
+                  
+                  <div class="mt-3 flex items-baseline justify-between text-xs">
+                    <span class="text-slate-400">Total Pendaftar:</span>
+                    <span class="font-bold text-base text-blue-400">
+                      {registered} <span class="text-xs text-slate-400 font-normal">/ {session.max_capacity} kuota</span>
+                    </span>
+                  </div>
+
+                  <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden mt-1.5">
+                    <div 
+                      class={`h-full rounded-full ${percent >= 100 ? 'bg-rose-500' : 'bg-blue-500'}`} 
+                      style={`width: ${percent}%;`}
+                    ></div>
+                  </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-t border-slate-700/60 flex justify-between items-center text-xs">
+                  <span class="text-emerald-400 font-semibold flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
+                    Checked-In: {checkedIn}
+                  </span>
+                  <span class="text-amber-400 font-semibold">
+                    Belum: {registered - checkedIn}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -108,7 +191,7 @@ try {
       )}
 
       <!-- Filter & Search Bar -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
         <div class="md:col-span-2">
           <input 
             type="text" 
@@ -122,10 +205,22 @@ try {
             id="sessionFilter" 
             class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
-            <option value="">Semua Sesi Latihan</option>
+            <option value="">Semua Sesi ({registrations.length} Peserta)</option>
             {sessions.map((s) => (
-              <option value={s.title}>{s.title} ({s.session_date})</option>
+              <option value={s.title}>
+                {s.title} ({s.total_registered}/{s.max_capacity})
+              </option>
             ))}
+          </select>
+        </div>
+        <div>
+          <select 
+            id="statusFilter" 
+            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          >
+            <option value="">Semua Status</option>
+            <option value="checked-in">Checked-In</option>
+            <option value="belum">Belum Check-In</option>
           </select>
         </div>
       </div>
@@ -145,7 +240,13 @@ try {
             </thead>
             <tbody class="divide-y divide-slate-700/50" id="participantTable">
               {registrations.map((reg) => (
-                <tr class="hover:bg-slate-700/30 transition participant-row" data-name={reg.full_name.toLowerCase()} data-phone={reg.phone_number} data-session={reg.sessions?.title || ''}>
+                <tr 
+                  class="hover:bg-slate-700/30 transition participant-row" 
+                  data-name={reg.full_name.toLowerCase()} 
+                  data-phone={reg.phone_number} 
+                  data-session={reg.sessions?.title || ''}
+                  data-status={reg.is_checked_in ? 'checked-in' : 'belum'}
+                >
                   <td class="px-6 py-4">
                     <div class="font-bold text-slate-100">{reg.full_name}</div>
                     <div class="text-xs text-slate-400">{reg.phone_number}</div>
@@ -194,25 +295,30 @@ try {
 
     </div>
 
-    <!-- Live Search Client-Side Filter -->
+    <!-- Live Search & Multi-Filter Client-Side Script -->
     <script>
       const searchInput = document.getElementById('searchInput') as HTMLInputElement;
       const sessionFilter = document.getElementById('sessionFilter') as HTMLSelectElement;
+      const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
       const rows = document.querySelectorAll<HTMLTableRowElement>('.participant-row');
+      const sessionCards = document.querySelectorAll<HTMLDivElement>('.session-card');
 
       function filterTable() {
         const query = searchInput.value.toLowerCase().trim();
         const selectedSession = sessionFilter.value;
+        const selectedStatus = statusFilter.value;
 
         rows.forEach((row) => {
           const name = row.getAttribute('data-name') || '';
           const phone = row.getAttribute('data-phone') || '';
           const session = row.getAttribute('data-session') || '';
+          const status = row.getAttribute('data-status') || '';
 
           const matchesQuery = name.includes(query) || phone.includes(query);
           const matchesSession = !selectedSession || session === selectedSession;
+          const matchesStatus = !selectedStatus || status === selectedStatus;
 
-          if (matchesQuery && matchesSession) {
+          if (matchesQuery && matchesSession && matchesStatus) {
             row.style.display = '';
           } else {
             row.style.display = 'none';
@@ -220,8 +326,22 @@ try {
         });
       }
 
+      // Klik card sesi langsung mengubah dropdown filter
+      sessionCards.forEach((card) => {
+        card.addEventListener('click', () => {
+          const title = card.getAttribute('data-session-title') || '';
+          if (sessionFilter.value === title) {
+            sessionFilter.value = '';
+          } else {
+            sessionFilter.value = title;
+          }
+          filterTable();
+        });
+      });
+
       searchInput?.addEventListener('input', filterTable);
       sessionFilter?.addEventListener('change', filterTable);
+      statusFilter?.addEventListener('change', filterTable);
     </script>
   </body>
 </html>
