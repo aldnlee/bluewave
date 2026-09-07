@@ -49,7 +49,7 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-// Fetch Jadwal Sesi (Hanya ambil title dan tanggal)
+// Fetch Jadwal Sesi
 try {
   const { data: sessionData } = await supabase
     .from('sessions')
@@ -67,26 +67,26 @@ try {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Grab Road to Jakarta Running Festival - Registration</title>
+    <title>Registration - Road to UI Half Marathon | Blue Wave</title>
   </head>
-  <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
-    <div class="max-w-lg w-full bg-slate-800/95 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-2xl border border-emerald-500/30">
+  <body class="bg-slate-950 text-[#fff] min-h-screen flex items-center justify-center p-4 font-sans selection:bg-[#005BDF] selection:text-white">
+    <div class="max-w-lg w-full bg-slate-900/95 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-2xl border border-[#005BDF]/30">
       
-      <!-- Brand & Event Badge -->
+      <!-- Brand & Event Header -->
       <div class="text-center mb-6">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 mb-3">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-semibold bg-[#005BDF]/15 text-blue-300 border border-[#005BDF]/30 mb-3">
           <span>Official Road to Campaign</span>
         </div>
-        <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">
-          GRAB <span class="text-emerald-400">ROAD TO JRF</span>
+        <h1 class="text-2xl sm:text-3xl font-black text-[#fff] tracking-tight">
+          ROAD TO <span class="text-[#005BDF]">UI HALF MARATHON</span>
         </h1>
-        <p class="text-xs text-slate-400 mt-1">Jakarta Running Festival Special Community Training</p>
+        <p class="text-xs text-slate-400 mt-1 font-medium">Blue Wave Running Community</p>
         
-        <!-- Info Jadwal (Tanpa Kuota) -->
+        <!-- Info Jadwal Sesi -->
         {sessionDetails && (
-          <div class="mt-4 p-3.5 bg-slate-700/50 border border-slate-600 rounded-xl text-center text-xs">
+          <div class="mt-4 p-3 bg-slate-800/80 border border-slate-700/80 rounded-xl text-center text-xs">
             <span class="text-slate-400">Jadwal Sesi Latihan: </span>
-            <strong class="text-emerald-400 font-semibold">{sessionDetails.session_date}</strong>
+            <strong class="text-white font-semibold ml-1">{sessionDetails.session_date}</strong>
           </div>
         )}
       </div>
@@ -107,8 +107,8 @@ try {
         
         <!-- Nama Lengkap -->
         <div>
-          <label for="full_name" class="block text-sm font-medium mb-1 text-slate-300">
-            Nama Lengkap <span class="text-emerald-400">*</span>
+          <label for="full_name" class="block text-sm font-medium mb-1.5 text-slate-200">
+            Nama Lengkap <span class="text-[#005BDF]">*</span>
           </label>
           <input 
             type="text" 
@@ -116,14 +116,14 @@ try {
             name="full_name" 
             required 
             placeholder="Sesuai kartu identitas"
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-100 placeholder-slate-500 text-sm"
+            class="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] focus:border-[#005BDF] text-[#fff] placeholder-slate-500 text-sm transition"
           />
         </div>
 
         <!-- No WhatsApp -->
         <div>
-          <label for="phone_number" class="block text-sm font-medium mb-1 text-slate-300">
-            No. WhatsApp Aktif <span class="text-emerald-400">*</span>
+          <label for="phone_number" class="block text-sm font-medium mb-1.5 text-slate-200">
+            No. WhatsApp Aktif <span class="text-[#005BDF]">*</span>
           </label>
           <input 
             type="tel" 
@@ -131,14 +131,14 @@ try {
             name="phone_number" 
             required 
             placeholder="0812xxxxxxxx"
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-100 placeholder-slate-500 text-sm"
+            class="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] focus:border-[#005BDF] text-[#fff] placeholder-slate-500 text-sm transition"
           />
         </div>
 
         <!-- Email -->
         <div>
-          <label for="email" class="block text-sm font-medium mb-1 text-slate-300">
-            Alamat Email <span class="text-emerald-400">*</span>
+          <label for="email" class="block text-sm font-medium mb-1.5 text-slate-200">
+            Alamat Email <span class="text-[#005BDF]">*</span>
           </label>
           <input 
             type="email" 
@@ -146,30 +146,30 @@ try {
             name="email" 
             required 
             placeholder="nama@email.com"
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-100 placeholder-slate-500 text-sm"
+            class="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] focus:border-[#005BDF] text-[#fff] placeholder-slate-500 text-sm transition"
           />
         </div>
 
         <!-- PERTANYAAN GROUP WHATSAPP -->
-        <div class="pt-3 border-t border-slate-700/60">
-          <label class="block text-xs font-semibold mb-2 text-slate-200">
-            Sudah bergabung di grup WhatsApp Blue Wave Community? <span class="text-emerald-400">*</span>
+        <div class="pt-3 border-t border-slate-800">
+          <label class="block text-xs font-semibold mb-2.5 text-slate-200">
+            Sudah bergabung di grup WhatsApp Blue Wave? <span class="text-[#005BDF]">*</span>
           </label>
           <div class="flex items-center space-x-6">
             <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="radio" name="joined_wa" value="sudah" class="wa-radio w-4 h-4 text-emerald-500 bg-slate-700 border-slate-600 focus:ring-emerald-500" required />
+              <input type="radio" name="joined_wa" value="sudah" class="wa-radio w-4 h-4 text-[#005BDF] bg-slate-800 border-slate-700 focus:ring-[#005BDF]" required />
               <span class="text-xs font-medium text-slate-200">Sudah</span>
             </label>
             <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="radio" name="joined_wa" value="belum" class="wa-radio w-4 h-4 text-emerald-500 bg-slate-700 border-slate-600 focus:ring-emerald-500" />
+              <input type="radio" name="joined_wa" value="belum" class="wa-radio w-4 h-4 text-[#005BDF] bg-slate-800 border-slate-700 focus:ring-[#005BDF]" />
               <span class="text-xs font-medium text-slate-200">Belum</span>
             </label>
           </div>
         </div>
 
         <!-- SECTION POPUP JOIN WA GROUP -->
-        <div id="section2JoinGroup" class="hidden p-3.5 bg-slate-700/40 border border-emerald-500/30 rounded-xl space-y-2.5 transition-all text-xs">
-          <h3 class="font-bold text-emerald-400">Join Community WhatsApp</h3>
+        <div id="section2JoinGroup" class="hidden p-4 bg-slate-800/90 border border-[#005BDF]/30 rounded-xl space-y-3 transition-all text-xs">
+          <h3 class="font-bold text-[#005BDF]">Join Blue Wave WhatsApp Community</h3>
           <p class="text-slate-300 leading-relaxed text-[11px]">
             Gabung grup komunitas untuk informasi titik kumpul (meeting point), race brief, dan dokumentasi event:
           </p>
@@ -178,23 +178,23 @@ try {
               href="https://chat.whatsapp.com/BAWU2LQlmqCAVZvYWPmHQE" 
               target="_blank" 
               rel="noopener noreferrer"
-              class="text-emerald-400 hover:text-emerald-300 underline font-medium break-all"
+              class="text-blue-400 hover:text-blue-300 underline font-medium break-all"
             >
               https://chat.whatsapp.com/BAWU2LQlmqCAVZvYWPmHQE
             </a>
           </div>
 
-          <div class="pt-2 border-t border-slate-600/50">
-            <label class="block font-semibold mb-1 text-slate-200">
-              Konfirmasi: Apakah Anda Sudah Join? <span class="text-emerald-400">*</span>
+          <div class="pt-3 border-t border-slate-700">
+            <label class="block font-semibold mb-2 text-slate-200">
+              Konfirmasi: Apakah Anda Sudah Join? <span class="text-[#005BDF]">*</span>
             </label>
             <div class="flex items-center space-x-6">
               <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="confirm_joined_wa" value="sudah" class="wa-confirm-radio w-4 h-4 text-emerald-500 bg-slate-700 border-slate-600 focus:ring-emerald-500" />
+                <input type="radio" name="confirm_joined_wa" value="sudah" class="wa-confirm-radio w-4 h-4 text-[#005BDF] bg-slate-800 border-slate-700 focus:ring-[#005BDF]" />
                 <span class="font-medium text-slate-200">Sudah</span>
               </label>
               <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="confirm_joined_wa" value="belum" class="wa-confirm-radio w-4 h-4 text-emerald-500 bg-slate-700 border-slate-600 focus:ring-emerald-500" />
+                <input type="radio" name="confirm_joined_wa" value="belum" class="wa-confirm-radio w-4 h-4 text-[#005BDF] bg-slate-800 border-slate-700 focus:ring-[#005BDF]" />
                 <span class="font-medium text-slate-200">Belum</span>
               </label>
             </div>
@@ -205,7 +205,7 @@ try {
         <button 
           type="submit" 
           id="submitBtn"
-          class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition duration-150 font-bold rounded-lg text-white shadow-lg shadow-emerald-600/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full py-3 px-4 bg-[#005BDF] hover:bg-[#004bb8] active:bg-[#003d96] transition duration-150 font-bold rounded-lg text-[#fff] shadow-lg shadow-[#005BDF]/25 mt-4 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           Daftar Road to UI Half Marathon
         </button>
