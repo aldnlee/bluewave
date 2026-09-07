@@ -9,7 +9,7 @@ const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 const supabase = getSupabase(runtimeEnv);
 
-// ID Sesi Campaign Grab Road to JRF
+// ID Sesi Campaign Road to UI Half Marathon
 const CAMPAIGN_SESSION_ID = '66666666-6666-4666-a666-666666666666';
 
 let sessionDetails: { title: string; session_date: string } | null = null;
@@ -38,7 +38,7 @@ if (Astro.request.method === 'POST') {
       } else if (data && !data.success) {
         message = data.message;
       } else if (data && data.success) {
-        message = data.message || 'Pendaftaran Grab Road to JRF Berhasil!';
+        message = data.message || 'Pendaftaran Road to UI Half Marathon Berhasil!';
         isSuccess = true;
       }
     } else {
@@ -207,7 +207,7 @@ try {
           id="submitBtn"
           class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition duration-150 font-bold rounded-lg text-white shadow-lg shadow-emerald-600/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Daftar Grab Road to JRF
+          Daftar Road to UI Half Marathon
         </button>
       </form>
 
