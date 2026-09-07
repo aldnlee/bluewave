@@ -12,8 +12,7 @@ const supabase = getSupabase(runtimeEnv);
 // ID Sesi Campaign Grab Road to JRF
 const CAMPAIGN_SESSION_ID = '66666666-6666-4666-a666-666666666666';
 
-let sessionDetails: { title: string; session_date: string; max_capacity: number } | null = null;
-let currentRegisteredCount = 0;
+let sessionDetails: { title: string; session_date: string } | null = null;
 
 // Tangkap Submit Form Registrasi
 if (Astro.request.method === 'POST') {
@@ -50,27 +49,18 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-// Fetch Detail Sesi dan Hitung Kuota Terisi
+// Fetch Jadwal Sesi (Hanya ambil title dan tanggal)
 try {
   const { data: sessionData } = await supabase
     .from('sessions')
-    .select('title, session_date, max_capacity')
+    .select('title, session_date')
     .eq('id', CAMPAIGN_SESSION_ID)
     .single();
 
   if (sessionData) sessionDetails = sessionData;
-
-  const { count } = await supabase
-    .from('registrations')
-    .select('id', { count: 'exact', head: true })
-    .eq('session_id', CAMPAIGN_SESSION_ID);
-
-  if (typeof count === 'number') currentRegisteredCount = count;
 } catch (e: any) {
   console.error('Fetch error:', e.message);
 }
-
-const isFull = sessionDetails ? currentRegisteredCount >= sessionDetails.max_capacity : false;
 ---
 
 <html lang="id">
@@ -92,19 +82,11 @@ const isFull = sessionDetails ? currentRegisteredCount >= sessionDetails.max_cap
         </h1>
         <p class="text-xs text-slate-400 mt-1">Jakarta Running Festival Special Community Training</p>
         
-        <!-- Info Sesi & Kuota -->
+        <!-- Info Jadwal (Tanpa Kuota) -->
         {sessionDetails && (
-          <div class="mt-4 p-3.5 bg-slate-700/50 border border-slate-600 rounded-xl text-left flex justify-between items-center text-xs">
-            <div>
-              <span class="text-slate-400 block">Jadwal Sesi:</span>
-              <strong class="text-slate-200 font-semibold">{sessionDetails.session_date}</strong>
-            </div>
-            <div class="text-right">
-              <span class="text-slate-400 block">Status Kuota:</span>
-              <span class={`font-bold ${isFull ? 'text-rose-400' : 'text-emerald-400'}`}>
-                {currentRegisteredCount} / {sessionDetails.max_capacity} Terisi
-              </span>
-            </div>
+          <div class="mt-4 p-3.5 bg-slate-700/50 border border-slate-600 rounded-xl text-center text-xs">
+            <span class="text-slate-400">Jadwal Sesi Latihan: </span>
+            <strong class="text-emerald-400 font-semibold">{sessionDetails.session_date}</strong>
           </div>
         )}
       </div>
@@ -223,10 +205,9 @@ const isFull = sessionDetails ? currentRegisteredCount >= sessionDetails.max_cap
         <button 
           type="submit" 
           id="submitBtn"
-          disabled={isFull}
           class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 transition duration-150 font-bold rounded-lg text-white shadow-lg shadow-emerald-600/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isFull ? 'Kuota Latihan Penuh' : 'Daftar Grab Road to JRF'}
+          Daftar Grab Road to JRF
         </button>
       </form>
 
