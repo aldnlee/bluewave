@@ -10,6 +10,9 @@ const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 const supabase = getSupabase(runtimeEnv);
 
+// Inisialisasi Resend Client
+const resendApiKey = runtimeEnv?.RESEND_API_KEY || import.meta.env.RESEND_API_KEY;
+
 let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
 
 // Format tanggal hari ini (YYYY-MM-DD)
@@ -29,12 +32,13 @@ if (Astro.request.method === 'POST') {
     if (!sessionId || sessionId === '') {
       message = 'Silakan pilih sesi latihan terlebih dahulu!';
     } else if (fullName && phoneNumber && email) {
-      // Panggil Stored Procedure register_bluewave_session
+      // 1. Panggil Stored Procedure register_bluewave_session (dengan p_email)
       const { data, error } = await supabase.rpc('register_bluewave_session', {
         p_session_id: sessionId,
         p_full_name: fullName,
         p_phone_number: phoneNumber,
         p_tier: tier,
+        p_email: email,
       });
 
       if (error) {
@@ -44,14 +48,7 @@ if (Astro.request.method === 'POST') {
       } else if (data && data.success) {
         message = data.message || 'Pendaftaran berhasil!';
         isSuccess = true;
-      }
-    } else {
-      message = 'Harap isi semua kolom wajib!';
-    }
-  } catch (err: any) {
-    message = `Terjadi kesalahan sistem: ${err.message}`;
-  }
-}
+
 
 // Fetch sesi yang belum lewat (session_date >= hari ini)
 try {
@@ -82,8 +79,8 @@ try {
       
       <!-- Header & Warning Note -->
       <div class="text-center mb-6">
-        <h1 class="text-3xl font-black text-blue-400 tracking-tight">BLUE WAVE REGISTRATION</h1>
-        <div class="mt-4 p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-xl text-xs text-blue-200 text-left leading-relaxed">
+        <h1 class="text-3xl font-black text-[#005BDF] tracking-tight">BLUE WAVE REGISTRATION</h1>
+        <div class="mt-4 p-3.5 bg-blue-500/10 border border-[#005BDF]/30 rounded-xl text-xs text-blue-200 text-left leading-relaxed">
           💡 <strong>Catatan:</strong> Mohon untuk tidak mengubah nama, nomor telepon, dan alamat email pada setiap proses registrasi ulang agar mempermudah proses verifikasi data XP.
         </div>
       </div>
@@ -110,7 +107,7 @@ try {
             id="session_id" 
             name="session_id" 
             required 
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100"
+            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-slate-100"
           >
             <option value="" class="bg-slate-800 text-slate-300">
               {sessions.length > 0 ? '-- Pilih Sesi --' : '-- Tidak ada sesi aktif --'}
@@ -134,7 +131,7 @@ try {
             name="full_name" 
             required 
             placeholder="Masukkan Nama Lengkap"
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 placeholder-slate-500"
+            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-slate-100 placeholder-slate-500"
           />
         </div>
 
@@ -149,7 +146,7 @@ try {
             name="phone_number" 
             required 
             placeholder="08123456789"
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 placeholder-slate-500"
+            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-slate-100 placeholder-slate-500"
           />
         </div>
 
@@ -164,7 +161,7 @@ try {
             name="email" 
             required 
             placeholder="nama@email.com"
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-100 placeholder-slate-500"
+            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-slate-100 placeholder-slate-500"
           />
         </div>
 
@@ -175,18 +172,18 @@ try {
           </label>
           <div class="flex items-center space-x-6">
             <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="radio" name="joined_wa" value="sudah" class="wa-radio w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-500" required />
+              <input type="radio" name="joined_wa" value="sudah" class="wa-radio w-4 h-4 text-[#005BDF] bg-slate-700 border-slate-600 focus:ring-[#005BDF]" required />
               <span class="text-sm font-medium text-slate-200">Sudah</span>
             </label>
             <label class="flex items-center space-x-2 cursor-pointer">
-              <input type="radio" name="joined_wa" value="belum" class="wa-radio w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-500" />
+              <input type="radio" name="joined_wa" value="belum" class="wa-radio w-4 h-4 text-[#005BDF] bg-slate-700 border-slate-600 focus:ring-[#005BDF]" />
               <span class="text-sm font-medium text-slate-200">Belum</span>
             </label>
           </div>
         </div>
 
         <!-- SECTION 2: JOIN BLUE WAVE GROUP -->
-        <div id="section2JoinGroup" class="hidden p-4 bg-slate-700/40 border border-blue-500/30 rounded-xl space-y-3 transition-all">
+        <div id="section2JoinGroup" class="hidden p-4 bg-slate-700/40 border border-[#005BDF]/30 rounded-xl space-y-3 transition-all">
           <h3 class="text-base font-bold text-blue-400">Join Blue Wave Group</h3>
           <p class="text-xs text-slate-300 leading-relaxed">
             Silakan bergabung ke grup WhatsApp Blue Wave melalui tautan di bawah ini untuk mendapatkan informasi terbaru seputar jadwal latihan, aktivitas komunitas, dan berbagai update lainnya.
@@ -209,11 +206,11 @@ try {
             </label>
             <div class="flex items-center space-x-6">
               <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="confirm_joined_wa" value="sudah" class="wa-confirm-radio w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-500" />
+                <input type="radio" name="confirm_joined_wa" value="sudah" class="wa-confirm-radio w-4 h-4 text-[#005BDF] bg-slate-700 border-slate-600 focus:ring-[#005BDF]" />
                 <span class="text-xs font-medium text-slate-200">Sudah</span>
               </label>
               <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="confirm_joined_wa" value="belum" class="wa-confirm-radio w-4 h-4 text-blue-600 bg-slate-700 border-slate-600 focus:ring-blue-500" />
+                <input type="radio" name="confirm_joined_wa" value="belum" class="wa-confirm-radio w-4 h-4 text-[#005BDF] bg-slate-700 border-slate-600 focus:ring-[#005BDF]" />
                 <span class="text-xs font-medium text-slate-200">Belum</span>
               </label>
             </div>
@@ -224,7 +221,7 @@ try {
         <button 
           type="submit" 
           id="submitBtn"
-          class="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 active:bg-blue-700 transition duration-150 font-semibold rounded-lg text-white shadow-lg shadow-blue-600/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full py-3 px-4 bg-[#005BDF] hover:bg-[#004bb8] active:bg-[#003d96] transition duration-150 font-semibold rounded-lg text-white shadow-lg shadow-[#005BDF]/20 mt-4 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           Kirim Pendaftaran
         </button>
