@@ -10,9 +10,6 @@ const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 const supabase = getSupabase(runtimeEnv);
 
-// Inisialisasi Resend Client
-const resendApiKey = runtimeEnv?.RESEND_API_KEY || import.meta.env.RESEND_API_KEY;
-
 // ID Sesi Kampanye Khusus yang dikecualikan dari dropdown reguler
 const RTUIHM_SESSION_ID = '66666666-6666-4666-a666-666666666666';
 
@@ -50,9 +47,15 @@ if (Astro.request.method === 'POST') {
         message = data.message;
       } else if (data && data.success) {
         message = data.message || 'Pendaftaran berhasil!';
-        isSuccess = true;}}
-
-      
+        isSuccess = true;
+      }
+    } else {
+      message = 'Harap isi semua kolom wajib!';
+    }
+  } catch (err: any) {
+    message = `Terjadi kesalahan sistem: ${err.message}`;
+  }
+}
 
 // Fetch hanya sesi reguler yang belum lewat (kecualikan RTUIHM)
 try {
