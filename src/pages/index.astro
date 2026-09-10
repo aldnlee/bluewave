@@ -10,6 +10,12 @@ const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 const supabase = getSupabase(runtimeEnv);
 
+// Inisialisasi Resend Client
+const resendApiKey = runtimeEnv?.RESEND_API_KEY || import.meta.env.RESEND_API_KEY;
+
+// ID Sesi Kampanye Khusus yang dikecualikan dari dropdown reguler
+const RTUIHM_SESSION_ID = '66666666-6666-4666-a666-666666666666';
+
 let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
 
 // Format tanggal hari ini (YYYY-MM-DD)
@@ -44,22 +50,17 @@ if (Astro.request.method === 'POST') {
         message = data.message;
       } else if (data && data.success) {
         message = data.message || 'Pendaftaran berhasil!';
-        isSuccess = true;
-      }
-    } else {
-      message = 'Harap isi semua kolom wajib!';
-    }
-  } catch (err: any) {
-    message = `Terjadi kesalahan sistem: ${err.message}`;
-  }
-}
+        isSuccess = true;}}
 
-// Fetch sesi yang belum lewat (session_date >= hari ini)
+      
+
+// Fetch hanya sesi reguler yang belum lewat (kecualikan RTUIHM)
 try {
   const { data, error } = await supabase
     .from('sessions')
     .select('id, title, session_date, max_capacity')
     .gte('session_date', today)
+    .neq('id', RTUIHM_SESSION_ID)
     .order('session_date', { ascending: true });
 
   if (!error && data) {
@@ -78,7 +79,7 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>BLUE WAVE REGISTRATION</title>
   </head>
-  <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
+  <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans selection:bg-[#005BDF] selection:text-white">
     <div class="max-w-lg w-full bg-slate-800/90 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-2xl border border-slate-700">
       
       <!-- Header & Warning Note -->
@@ -169,7 +170,7 @@ try {
           />
         </div>
 
-        <!-- PERTANYAAN GROUP WHATSAPP -->
+        <!-- Pertanyaan Group WhatsApp -->
         <div class="pt-2 border-t border-slate-700/60">
           <label class="block text-sm font-semibold mb-3 text-slate-200">
             Apakah Anda sudah bergabung di group Whatsapp Blue Wave? <span class="text-rose-400">*</span>
@@ -186,7 +187,7 @@ try {
           </div>
         </div>
 
-        <!-- SECTION 2: JOIN BLUE WAVE GROUP -->
+        <!-- Section 2: Join Blue Wave Group -->
         <div id="section2JoinGroup" class="hidden p-4 bg-slate-700/40 border border-[#005BDF]/30 rounded-xl space-y-3 transition-all">
           <h3 class="text-base font-bold text-blue-400">Join Blue Wave Group</h3>
           <p class="text-xs text-slate-300 leading-relaxed">
@@ -221,7 +222,7 @@ try {
           </div>
         </div>
 
-        <!-- SUBMIT BUTTON -->
+        <!-- Submit Button -->
         <button 
           type="submit" 
           id="submitBtn"
@@ -233,7 +234,7 @@ try {
 
     </div>
 
-    <!-- CLIENT-SIDE LOGIC -->
+    <!-- Client-Side Logic -->
     <script>
       const waRadios = document.querySelectorAll<HTMLInputElement>('.wa-radio');
       const confirmRadios = document.querySelectorAll<HTMLInputElement>('.wa-confirm-radio');
