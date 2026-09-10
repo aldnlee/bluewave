@@ -13,6 +13,7 @@ const supabase = getSupabase(runtimeEnv);
 // Inisialisasi Resend Client
 const resendApiKey = runtimeEnv?.RESEND_API_KEY || import.meta.env.RESEND_API_KEY;
 
+
 let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
 
 // Format tanggal hari ini (YYYY-MM-DD)
@@ -49,6 +50,7 @@ if (Astro.request.method === 'POST') {
         message = data.message || 'Pendaftaran berhasil!';
         isSuccess = true;
 
+       
 
 // Fetch sesi yang belum lewat (session_date >= hari ini)
 try {
