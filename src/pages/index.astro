@@ -10,10 +10,6 @@ const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 const supabase = getSupabase(runtimeEnv);
 
-// Inisialisasi Resend Client
-const resendApiKey = runtimeEnv?.RESEND_API_KEY || import.meta.env.RESEND_API_KEY;
-
-
 let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
 
 // Format tanggal hari ini (YYYY-MM-DD)
@@ -28,12 +24,12 @@ if (Astro.request.method === 'POST') {
     const fullName = formData.get('full_name')?.toString()?.trim();
     const phoneNumber = formData.get('phone_number')?.toString()?.trim();
     const email = formData.get('email')?.toString()?.trim();
-    const tier = 'bluewave'; // Kategori otomatis diset ke bluewave
+    const tier = 'bluewave';
 
     if (!sessionId || sessionId === '') {
       message = 'Silakan pilih sesi latihan terlebih dahulu!';
     } else if (fullName && phoneNumber && email) {
-      // 1. Panggil Stored Procedure register_bluewave_session (dengan p_email)
+      // Panggil Stored Procedure register_bluewave_session
       const { data, error } = await supabase.rpc('register_bluewave_session', {
         p_session_id: sessionId,
         p_full_name: fullName,
@@ -48,9 +44,15 @@ if (Astro.request.method === 'POST') {
         message = data.message;
       } else if (data && data.success) {
         message = data.message || 'Pendaftaran berhasil!';
-        isSuccess = true; }}
-
-       
+        isSuccess = true;
+      }
+    } else {
+      message = 'Harap isi semua kolom wajib!';
+    }
+  } catch (err: any) {
+    message = `Terjadi kesalahan sistem: ${err.message}`;
+  }
+}
 
 // Fetch sesi yang belum lewat (session_date >= hari ini)
 try {
