@@ -87,50 +87,85 @@ try {
       
       <!-- Header & Warning Note -->
       <div class="text-center mb-6">
-  <h1 class="text-3xl font-black text-[#005BDF] tracking-tight">BLUE WAVE REGISTRATION</h1>
+        <h1 class="text-3xl font-black text-[#005BDF] tracking-tight">BLUE WAVE REGISTRATION</h1>
 
-  <!-- POPPING SPECIAL CHALLENGE CARD -->
-  <div class="relative mt-5 overflow-hidden rounded-2xl border border-[#005BDF]/40 bg-gradient-to-br from-[#005BDF]/20 via-slate-800/90 to-slate-900 p-4 sm:p-5 text-left shadow-lg shadow-[#005BDF]/15 transition duration-300 hover:border-[#005BDF] hover:shadow-[#005BDF]/25">
-    
-    <!-- Decorative Glow Accent -->
-    <div class="pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full bg-[#005BDF]/30 blur-2xl"></div>
+        <!-- POPPING SPECIAL CHALLENGE CARD -->
+        <div class={`relative mt-5 overflow-hidden rounded-2xl border transition duration-300 p-4 sm:p-5 text-left shadow-lg ${
+          isSuccess 
+            ? 'border-[#005BDF] bg-gradient-to-br from-[#005BDF]/30 via-slate-800/95 to-slate-900 shadow-[#005BDF]/30' 
+            : 'border-slate-700 bg-slate-800/60 shadow-black/20'
+        }`}>
+          
+          <!-- Decorative Glow Accent (Menyala jika sudah sukses) -->
+          {isSuccess && (
+            <div class="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-[#005BDF]/40 blur-2xl animate-pulse"></div>
+          )}
 
-    <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-      <div class="space-y-1.5 flex-1">
-        <!-- Tag / Badge -->
-        <div class="inline-flex items-center gap-1.5 rounded-full bg-[#005BDF] px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm">
-          <span class="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300"></span>
-          Special Challenge
+          <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+            <div class="space-y-1.5 flex-1">
+              <!-- Tag / Badge -->
+              <div class="flex items-center gap-2">
+                <span class={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm ${
+                  isSuccess ? 'bg-[#005BDF]' : 'bg-slate-700 text-slate-300'
+                }`}>
+                  <span class={`inline-block h-1.5 w-1.5 rounded-full ${isSuccess ? 'bg-cyan-300 animate-pulse' : 'bg-slate-400'}`}></span>
+                  Special Challenge
+                </span>
+
+                {isSuccess ? (
+                  <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                    ✓ Akses Terbuka
+                  </span>
+                ) : (
+                  <span class="text-[11px] font-medium text-amber-400/90 flex items-center gap-1">
+                    🔒 Terkunci
+                  </span>
+                )}
+              </div>
+              
+              <!-- Challenge Title -->
+              <h3 class="text-base font-extrabold text-white tracking-tight">
+                GRAB YOUR MILES
+              </h3>
+
+              <!-- Description -->
+              <p class="text-xs text-slate-300 leading-relaxed">
+                {isSuccess 
+                  ? 'Registrasi sesi selesai! Silakan lanjutkan membuat akun resmi untuk mengumpulkan poin dan jarak tempuh Anda.' 
+                  : 'Selesaikan pendaftaran sesi latihan di bawah terlebih dahulu untuk membuka akses tantangan ini.'}
+              </p>
+            </div>
+
+            <!-- Action Button / Conditional Link -->
+            <div class="pt-1 sm:pt-0">
+              {isSuccess ? (
+                <a 
+                  href="https://grab.gofit.id" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#005BDF] hover:bg-[#004bb8] text-white text-xs font-bold shadow-lg shadow-[#005BDF]/30 transition transform hover:-translate-y-0.5 active:translate-y-0 animate-bounce"
+                >
+                  <span>Daftar Grab</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </a>
+              ) : (
+                <button 
+                  type="button" 
+                  disabled 
+                  class="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-700/60 text-slate-400 border border-slate-600/50 text-xs font-semibold cursor-not-allowed opacity-75"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Daftar Sesi Dulu</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-        
-        <!-- Challenge Title -->
-        <h3 class="text-base font-extrabold text-white tracking-tight">
-          GRAB YOUR MILES
-        </h3>
-
-        <!-- Description -->
-        <p class="text-xs text-slate-300 leading-relaxed">
-          Buat akun di platform resmi dan selesaikan aktivasinya untuk mulai mengumpulkan jarak tempuh kamu.
-        </p>
       </div>
-
-      <!-- Action Button -->
-      <div class="pt-1 sm:pt-0">
-        <a 
-          href="https://grab.gofit.id" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          class="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#005BDF] hover:bg-[#004bb8] text-white text-xs font-bold shadow-md shadow-[#005BDF]/30 transition transform hover:-translate-y-0.5 active:translate-y-0"
-        >
-          <span>Daftar Sekarang</span>
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-          </svg>
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
 
       <!-- Alert Message -->
       {message && (
