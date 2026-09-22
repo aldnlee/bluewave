@@ -1,6 +1,6 @@
 ---
 import { getSupabase } from '../lib/supabase';
-import '../../styles/global.css';
+import '../styles/global.css';
 
 const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
@@ -21,21 +21,25 @@ try {
     .from('attendance_leaderboard')
     .select('*');
 
-  if (data) leaderboard = data;
+  if (!error && data) {
+    leaderboard = data;
+  } else if (error) {
+    console.error('Leaderboard Fetch Error:', error.message);
+  }
 } catch (e: any) {
-  console.error('Leaderboard Fetch Error:', e.message);
+  console.error('Init Error:', e.message);
 }
 
-const totalEligible = leaderboard.filter(p => p.eligible_jersey).length;
+const totalEligible = leaderboard.filter((p) => p.eligible_jersey).length;
 ---
 
 <html lang="id">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Blue Wave - Attendance Leaderboard & Jersey Rewards</title>
+    <title>Attendance Leaderboard & Jersey Rewards - Blue Wave</title>
   </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
+  <body class="bg-slate-950 text-[#fff] min-h-screen p-4 sm:p-6 font-sans selection:bg-[#005BDF] selection:text-white">
     <div class="max-w-6xl mx-auto space-y-6">
       
       <!-- Top Banner Summary -->
@@ -44,8 +48,10 @@ const totalEligible = leaderboard.filter(p => p.eligible_jersey).length;
           <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-[#005BDF]/20 text-blue-300 border border-[#005BDF]/40 mb-2">
             <span>Reward Qualification System</span>
           </div>
-          <h1 class="text-2xl font-black text-white tracking-tight">BLUE WAVE LEADERBOARD</h1>
-          <p class="text-xs text-slate-400 mt-1">Klasifikasi keaktifan sesi latihan dan reward jersey (Minimal 3x Kehadiran On-Site)</p>
+          <h1 class="text-2xl sm:text-3xl font-black text-[#fff] tracking-tight">
+            BLUE WAVE <span class="text-[#005BDF]">LEADERBOARD</span>
+          </h1>
+          <p class="text-xs text-slate-400 mt-1">Klasifikasi keaktifan sesi latihan dan reward jersey (Minimal 3x Kehadiran Check-In On-Site)</p>
         </div>
 
         <div class="flex items-center gap-3">
@@ -72,8 +78,8 @@ const totalEligible = leaderboard.filter(p => p.eligible_jersey).length;
           id="eligibilityFilter" 
           class="px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm text-white focus:outline-none focus:ring-2 focus:ring-[#005BDF]"
         >
-          <option value="all">Semua Peserta</option>
-          <option value="eligible">Sudah Berhak Jersey (≥3x)</option>
+          <option value="all">Semua Peserta ({leaderboard.length})</option>
+          <option value="eligible">Sudah Berhak Jersey (≥3x) ({totalEligible})</option>
           <option value="in_progress">Menuju Jersey (1-2x)</option>
         </select>
       </div>
@@ -91,61 +97,69 @@ const totalEligible = leaderboard.filter(p => p.eligible_jersey).length;
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-800/60" id="leaderboardBody">
-              {leaderboard.map((item, index) => {
-                const progress = Math.min(Math.round((item.total_attended / 3) * 100), 100);
-                return (
-                  <tr 
-                    class="hover:bg-slate-800/40 transition runner-row" 
-                    data-name={item.full_name.toLowerCase()} 
-                    data-phone={item.phone_number} 
-                    data-eligible={item.eligible_jersey ? 'eligible' : 'in_progress'}
-                  >
-                    <td class="px-6 py-4">
-                      <div class="flex items-center gap-3">
-                        <span class={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                          index === 0 ? 'bg-amber-400 text-black' :
-                          index === 1 ? 'bg-slate-300 text-black' :
-                          index === 2 ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'
-                        }`}>
-                          {index + 1}
-                        </span>
-                        <div>
-                          <div class="font-bold text-white">{item.full_name}</div>
-                          <div class="text-[11px] text-slate-400">Total Daftar: {item.total_registered} sesi</div>
+              {leaderboard.length === 0 ? (
+                <tr>
+                  <td colspan="4" class="px-6 py-8 text-center text-slate-500 text-sm">
+                    Belum ada data kehadiran pelari.
+                  </td>
+                </tr>
+              ) : (
+                leaderboard.map((item, index) => {
+                  const progress = Math.min(Math.round((item.total_attended / 3) * 100), 100);
+                  return (
+                    <tr 
+                      class="hover:bg-slate-800/40 transition runner-row" 
+                      data-name={item.full_name.toLowerCase()} 
+                      data-phone={item.phone_number} 
+                      data-eligible={item.eligible_jersey ? 'eligible' : 'in_progress'}
+                    >
+                      <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                          <span class={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                            index === 0 ? 'bg-amber-400 text-black' :
+                            index === 1 ? 'bg-slate-300 text-black' :
+                            index === 2 ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'
+                          }`}>
+                            {index + 1}
+                          </span>
+                          <div>
+                            <div class="font-bold text-white">{item.full_name}</div>
+                            <div class="text-[11px] text-slate-400">Total Daftar: {item.total_registered} sesi</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4">
-                      <div class="text-xs text-slate-300 font-mono">{item.phone_number}</div>
-                      {item.email && <div class="text-xs text-[#005BDF] font-mono">{item.email}</div>}
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                      <div class="inline-flex flex-col items-center">
-                        <span class="text-base font-black text-white">
-                          {item.total_attended} <span class="text-xs text-slate-500 font-normal">/ 3 sesi</span>
-                        </span>
-                        <div class="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
-                          <div 
-                            class={`h-full rounded-full ${item.eligible_jersey ? 'bg-emerald-400' : 'bg-[#005BDF]'}`} 
-                            style={`width: ${progress}%;`}
-                          ></div>
+                      </td>
+                      <td class="px-6 py-4">
+                        <div class="text-xs text-slate-300 font-mono">{item.phone_number}</div>
+                        {item.email && <div class="text-xs text-[#005BDF] font-mono">{item.email}</div>}
+                      </td>
+                      <td class="px-6 py-4 text-center">
+                        <div class="inline-flex flex-col items-center">
+                          <span class="text-base font-black text-white">
+                            {item.total_attended} <span class="text-xs text-slate-500 font-normal">/ 3 sesi</span>
+                          </span>
+                          <div class="w-20 bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1">
+                            <div 
+                              class={`h-full rounded-full ${item.eligible_jersey ? 'bg-emerald-400' : 'bg-[#005BDF]'}`} 
+                              style={`width: ${progress}%;`}
+                            ></div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4">
-                      {item.eligible_jersey ? (
-                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/40">
-                          <span>🎽</span> Claim Jersey
-                        </span>
-                      ) : (
-                        <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
-                          Kurang {3 - item.total_attended} sesi lagi
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td class="px-6 py-4">
+                        {item.eligible_jersey ? (
+                          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/40">
+                            <span>🎽</span> Claim Jersey
+                          </span>
+                        ) : (
+                          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                            Kurang {Math.max(3 - item.total_attended, 0)} sesi lagi
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
@@ -163,7 +177,7 @@ const totalEligible = leaderboard.filter(p => p.eligible_jersey).length;
         const query = searchInput.value.toLowerCase().trim();
         const selected = eligibilityFilter.value;
 
-        rows.forEach(row => {
+        rows.forEach((row) => {
           const name = row.getAttribute('data-name') || '';
           const phone = row.getAttribute('data-phone') || '';
           const eligible = row.getAttribute('data-eligible') || '';
@@ -171,7 +185,11 @@ const totalEligible = leaderboard.filter(p => p.eligible_jersey).length;
           const matchesQuery = name.includes(query) || phone.includes(query);
           const matchesEligible = selected === 'all' || eligible === selected;
 
-          row.style.display = (matchesQuery && matchesEligible) ? '' : 'none';
+          if (matchesQuery && matchesEligible) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
         });
       }
 
