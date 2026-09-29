@@ -99,18 +99,18 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin Dashboard - Blue Wave Check-In</title>
   </head>
-  <body class="bg-slate-900 text-slate-100 min-h-screen p-4 sm:p-6 font-sans">
+  <body class="bg-slate-950 text-[#fff] min-h-screen p-4 sm:p-6 font-sans selection:bg-[#005BDF] selection:text-white">
     <div class="max-w-6xl mx-auto space-y-6">
       
       <!-- Top Bar -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-800 p-6 rounded-2xl border border-slate-700 shadow-xl">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-[#005BDF]/30 shadow-xl">
         <div>
-          <h1 class="text-2xl font-black text-blue-400">BLUE WAVE ADMIN</h1>
+          <h1 class="text-2xl font-black text-[#005BDF] tracking-tight">BLUE WAVE ADMIN</h1>
           <p class="text-xs text-slate-400 mt-1">Dashboard Re-Registration & Check-In On-Site</p>
         </div>
         
         <div class="flex items-center gap-3">
-          <div class="bg-slate-700 px-4 py-2 rounded-xl text-center border border-slate-600">
+          <div class="bg-slate-800 px-4 py-2 rounded-xl text-center border border-slate-700">
             <span class="block text-xs text-slate-400 font-medium">Total Peserta</span>
             <span class="text-lg font-bold text-white">{registrations.length}</span>
           </div>
@@ -145,33 +145,33 @@ try {
 
             return (
               <div 
-                class="session-card bg-slate-800/90 hover:border-blue-500/60 transition cursor-pointer p-4 rounded-xl border border-slate-700 shadow-md flex flex-col justify-between"
+                class="session-card bg-slate-900 hover:border-[#005BDF]/80 transition cursor-pointer p-4 rounded-xl border border-slate-800 shadow-md flex flex-col justify-between"
                 data-session-title={session.title}
               >
                 <div>
                   <div class="flex justify-between items-start gap-2">
                     <h3 class="font-bold text-slate-100 text-sm">{session.title}</h3>
-                    <span class="text-[11px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded font-mono">
+                    <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono border border-slate-700">
                       {session.session_date}
                     </span>
                   </div>
                   
                   <div class="mt-3 flex items-baseline justify-between text-xs">
                     <span class="text-slate-400">Total Pendaftar:</span>
-                    <span class="font-bold text-base text-blue-400">
+                    <span class="font-bold text-base text-[#005BDF]">
                       {registered} <span class="text-xs text-slate-400 font-normal">/ {session.max_capacity} kuota</span>
                     </span>
                   </div>
 
-                  <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden mt-1.5">
+                  <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
                     <div 
-                      class={`h-full rounded-full ${percent >= 100 ? 'bg-rose-500' : 'bg-blue-500'}`} 
+                      class={`h-full rounded-full ${percent >= 100 ? 'bg-rose-500' : 'bg-[#005BDF]'}`} 
                       style={`width: ${percent}%;`}
                     ></div>
                   </div>
                 </div>
 
-                <div class="mt-4 pt-3 border-t border-slate-700/60 flex justify-between items-center text-xs">
+                <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
                   <span class="text-emerald-400 font-semibold flex items-center gap-1">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
                     Checked-In: {checkedIn}
@@ -187,25 +187,25 @@ try {
       </div>
 
       {message && (
-        <div class="p-4 bg-blue-500/10 border border-blue-500/30 text-blue-300 rounded-xl text-sm font-medium">
+        <div class="p-4 bg-[#005BDF]/10 border border-[#005BDF]/30 text-blue-300 rounded-xl text-sm font-medium">
           {message}
         </div>
       )}
 
       <!-- Filter & Search Bar -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-800 p-4 rounded-xl border border-slate-700">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-4 rounded-xl border border-slate-800">
         <div class="md:col-span-2">
           <input 
             type="text" 
             id="searchInput" 
             placeholder="🔍 Cari Nama, No. HP, atau Email Peserta..." 
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
           />
         </div>
         <div>
           <select 
             id="sessionFilter" 
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
           >
             <option value="">Semua Sesi ({registrations.length} Peserta)</option>
             {sessions.map((s) => (
@@ -218,7 +218,7 @@ try {
         <div>
           <select 
             id="statusFilter" 
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
           >
             <option value="">Semua Status</option>
             <option value="checked-in">Checked-In</option>
@@ -228,10 +228,10 @@ try {
       </div>
 
       <!-- Tabel Registrasi Peserta -->
-      <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
+      <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-sm text-slate-200">
-            <thead class="bg-slate-700/50 text-xs uppercase text-slate-400 border-b border-slate-700">
+            <thead class="bg-slate-800/80 text-xs uppercase text-slate-400 border-b border-slate-800">
               <tr>
                 <th class="px-6 py-4">Peserta</th>
                 <th class="px-6 py-4">Sesi</th>
@@ -240,30 +240,30 @@ try {
                 <th class="px-6 py-4 text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-700/50" id="participantTable">
+            <tbody class="divide-y divide-slate-800/60" id="participantTable">
               {registrations.map((reg) => {
                 const sessionTitle = reg.sessions?.title || sessions.find((s) => s.id === reg.session_id)?.title || '-';
                 return (
                   <tr 
-                    class="hover:bg-slate-700/30 transition participant-row" 
+                    class="hover:bg-slate-800/40 transition participant-row" 
                     data-name={reg.full_name.toLowerCase()} 
                     data-phone={reg.phone_number} 
                     data-email={(reg.email || '').toLowerCase()}
-                    data-session={sessionTitle}
+                    data-session={sessionTitle.toLowerCase()}
                     data-status={reg.is_checked_in ? 'checked-in' : 'belum'}
                   >
                     <td class="px-6 py-4">
                       <div class="font-bold text-slate-100">{reg.full_name}</div>
                       <div class="text-xs text-slate-400">{reg.phone_number}</div>
                       {reg.email && (
-                        <div class="text-xs text-blue-400 font-mono mt-0.5">{reg.email}</div>
+                        <div class="text-xs text-[#005BDF] font-mono mt-0.5">{reg.email}</div>
                       )}
                     </td>
                     <td class="px-6 py-4 text-xs text-slate-300">
                       {sessionTitle}
                     </td>
                     <td class="px-6 py-4">
-                      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-700 text-slate-300 border border-slate-600 uppercase">
+                      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 uppercase">
                         {reg.tier}
                       </span>
                     </td>
@@ -284,7 +284,7 @@ try {
                         <input type="hidden" name="current_status" value={reg.is_checked_in.toString()} />
                         <button 
                           type="submit" 
-                          class={`px-4 py-2 rounded-lg text-xs font-bold transition shadow-md ${
+                          class={`px-4 py-2 rounded-lg text-xs font-bold transition shadow-md cursor-pointer ${
                             reg.is_checked_in 
                               ? 'bg-rose-600/20 text-rose-300 hover:bg-rose-600/40 border border-rose-500/30' 
                               : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
@@ -314,20 +314,26 @@ try {
 
       function filterTable() {
         const query = searchInput.value.toLowerCase().trim();
-        const selectedSession = sessionFilter.value;
-        const selectedStatus = statusFilter.value;
+        const selectedSession = sessionFilter.value.toLowerCase().trim();
+        const selectedStatus = statusFilter.value.toLowerCase().trim();
 
         rows.forEach((row) => {
-          const name = row.getAttribute('data-name') || '';
-          const phone = row.getAttribute('data-phone') || '';
-          const email = row.getAttribute('data-email') || '';
-          const session = row.getAttribute('data-session') || '';
-          const status = row.getAttribute('data-status') || '';
+          const name = (row.getAttribute('data-name') || '').toLowerCase();
+          const phone = (row.getAttribute('data-phone') || '').toLowerCase();
+          const email = (row.getAttribute('data-email') || '').toLowerCase();
+          const session = (row.getAttribute('data-session') || '').toLowerCase();
+          const status = (row.getAttribute('data-status') || '').toLowerCase();
 
-          const matchesQuery = name.includes(query) || phone.includes(query) || email.includes(query);
+          // 1. Cek kata kunci pencarian (Nama, No HP, atau Email)
+          const matchesQuery = !query || name.includes(query) || phone.includes(query) || email.includes(query);
+
+          // 2. Cek filter Sesi Latihan
           const matchesSession = !selectedSession || session === selectedSession;
+
+          // 3. Cek filter Status Check-In
           const matchesStatus = !selectedStatus || status === selectedStatus;
 
+          // Tampilkan hanya jika SEMUA kondisi terpenuhi
           if (matchesQuery && matchesSession && matchesStatus) {
             row.style.display = '';
           } else {
@@ -336,12 +342,12 @@ try {
         });
       }
 
-      // Klik card sesi langsung mengubah dropdown filter
+      // Klik kartu rekap sesi untuk memilih/membatalkan filter sesi
       sessionCards.forEach((card) => {
         card.addEventListener('click', () => {
           const title = card.getAttribute('data-session-title') || '';
           if (sessionFilter.value === title) {
-            sessionFilter.value = '';
+            sessionFilter.value = ''; // Reset jika diklik ulang
           } else {
             sessionFilter.value = title;
           }
