@@ -77,7 +77,6 @@ try {
 
   if (regData) registrations = regData as any;
 
-  // Hitung jumlah pendaftar dan yang sudah check-in per sesi
   if (sessionData) {
     sessions = sessionData.map((s) => {
       const sessionRegs = registrations.filter((r) => r.session_id === s.id);
@@ -147,6 +146,7 @@ try {
               <div 
                 class="session-card bg-slate-900 hover:border-[#005BDF]/80 transition cursor-pointer p-4 rounded-xl border border-slate-800 shadow-md flex flex-col justify-between"
                 data-session-title={session.title}
+                data-session-date={session.session_date}
               >
                 <div>
                   <div class="flex justify-between items-start gap-2">
@@ -193,37 +193,60 @@ try {
       )}
 
       <!-- Filter & Search Bar -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-900 p-4 rounded-xl border border-slate-800">
-        <div class="md:col-span-2">
-          <input 
-            type="text" 
-            id="searchInput" 
-            placeholder="🔍 Cari Nama, No. HP, atau Email Peserta..." 
-            class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
-          />
+      <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 space-y-3">
+        <!-- Shortcut Hari H Button & Info Bar -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800 text-xs">
+          <div class="flex items-center gap-2">
+            <button 
+              type="button" 
+              id="todayBtn"
+              class="px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/30 transition font-bold flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>⚡ Filter Sesi Hari Ini</span>
+            </button>
+            <button 
+              type="button" 
+              id="resetFilterBtn"
+              class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition font-medium cursor-pointer"
+            >
+              Reset Filter
+            </button>
+          </div>
+          <span id="activeFilterBadge" class="text-slate-400 italic">Menampilkan semua sesi</span>
         </div>
-        <div>
-          <select 
-            id="sessionFilter" 
-            class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
-          >
-            <option value="">Semua Sesi ({registrations.length} Peserta)</option>
-            {sessions.map((s) => (
-              <option value={s.title}>
-                {s.title} ({s.total_registered}/{s.max_capacity})
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <select 
-            id="statusFilter" 
-            class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
-          >
-            <option value="">Semua Status</option>
-            <option value="checked-in">Checked-In</option>
-            <option value="belum">Belum Check-In</option>
-          </select>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div class="md:col-span-2">
+            <input 
+              type="text" 
+              id="searchInput" 
+              placeholder="🔍 Cari Nama, No. HP, atau Email Peserta..." 
+              class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
+            />
+          </div>
+          <div>
+            <select 
+              id="sessionFilter" 
+              class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
+            >
+              <option value="">Semua Sesi ({registrations.length} Peserta)</option>
+              {sessions.map((s) => (
+                <option value={s.title} data-date={s.session_date}>
+                  {s.title} ({s.session_date})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <select 
+              id="statusFilter" 
+              class="w-full px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-sm"
+            >
+              <option value="">Semua Status</option>
+              <option value="checked-in">Checked-In</option>
+              <option value="belum">Belum Check-In</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -234,7 +257,7 @@ try {
             <thead class="bg-slate-800/80 text-xs uppercase text-slate-400 border-b border-slate-800">
               <tr>
                 <th class="px-6 py-4">Peserta</th>
-                <th class="px-6 py-4">Sesi</th>
+                <th class="px-6 py-4">Sesi & Tanggal</th>
                 <th class="px-6 py-4">Kategori</th>
                 <th class="px-6 py-4">Status Check-In</th>
                 <th class="px-6 py-4 text-center">Aksi</th>
@@ -242,7 +265,10 @@ try {
             </thead>
             <tbody class="divide-y divide-slate-800/60" id="participantTable">
               {registrations.map((reg) => {
-                const sessionTitle = reg.sessions?.title || sessions.find((s) => s.id === reg.session_id)?.title || '-';
+                const sessionObj = reg.sessions || sessions.find((s) => s.id === reg.session_id);
+                const sessionTitle = sessionObj?.title || '-';
+                const sessionDate = sessionObj?.session_date || '';
+
                 return (
                   <tr 
                     class="hover:bg-slate-800/40 transition participant-row" 
@@ -250,6 +276,7 @@ try {
                     data-phone={reg.phone_number} 
                     data-email={(reg.email || '').toLowerCase()}
                     data-session={sessionTitle.toLowerCase()}
+                    data-[#date]={sessionDate}
                     data-status={reg.is_checked_in ? 'checked-in' : 'belum'}
                   >
                     <td class="px-6 py-4">
@@ -259,8 +286,9 @@ try {
                         <div class="text-xs text-[#005BDF] font-mono mt-0.5">{reg.email}</div>
                       )}
                     </td>
-                    <td class="px-6 py-4 text-xs text-slate-300">
-                      {sessionTitle}
+                    <td class="px-6 py-4 text-xs">
+                      <div class="font-semibold text-slate-200">{sessionTitle}</div>
+                      <div class="text-slate-400 text-[11px] font-mono mt-0.5">📅 {sessionDate}</div>
                     </td>
                     <td class="px-6 py-4">
                       <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 uppercase">
@@ -304,18 +332,26 @@ try {
 
     </div>
 
-    <!-- Live Search & Multi-Filter Client-Side Script -->
+    <!-- Live Search & Date Filter Client-Side Script -->
     <script>
       const searchInput = document.getElementById('searchInput') as HTMLInputElement;
       const sessionFilter = document.getElementById('sessionFilter') as HTMLSelectElement;
       const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
+      const todayBtn = document.getElementById('todayBtn');
+      const resetFilterBtn = document.getElementById('resetFilterBtn');
+      const activeFilterBadge = document.getElementById('activeFilterBadge');
+      
       const rows = document.querySelectorAll<HTMLTableRowElement>('.participant-row');
       const sessionCards = document.querySelectorAll<HTMLDivElement>('.session-card');
+
+      let targetDateFilter: string | null = null;
 
       function filterTable() {
         const query = searchInput.value.toLowerCase().trim();
         const selectedSession = sessionFilter.value.toLowerCase().trim();
         const selectedStatus = statusFilter.value.toLowerCase().trim();
+
+        let visibleCount = 0;
 
         rows.forEach((row) => {
           const name = (row.getAttribute('data-name') || '').toLowerCase();
@@ -323,31 +359,69 @@ try {
           const email = (row.getAttribute('data-email') || '').toLowerCase();
           const session = (row.getAttribute('data-session') || '').toLowerCase();
           const status = (row.getAttribute('data-status') || '').toLowerCase();
+          const rowDate = row.getAttribute('data-[#date]') || '';
 
-          // 1. Cek kata kunci pencarian (Nama, No HP, atau Email)
+          // 1. Cek Kata Kunci Search
           const matchesQuery = !query || name.includes(query) || phone.includes(query) || email.includes(query);
 
-          // 2. Cek filter Sesi Latihan
+          // 2. Cek Filter Sesi
           const matchesSession = !selectedSession || session === selectedSession;
 
-          // 3. Cek filter Status Check-In
+          // 3. Cek Filter Status
           const matchesStatus = !selectedStatus || status === selectedStatus;
 
-          // Tampilkan hanya jika SEMUA kondisi terpenuhi
-          if (matchesQuery && matchesSession && matchesStatus) {
+          // 4. Cek Filter Tanggal Hari H (jika aktif)
+          const matchesDate = !targetDateFilter || rowDate === targetDateFilter;
+
+          if (matchesQuery && matchesSession && matchesStatus && matchesDate) {
             row.style.display = '';
+            visibleCount++;
           } else {
             row.style.display = 'none';
           }
         });
+
+        // Update keterangan status filter
+        if (activeFilterBadge) {
+          if (targetDateFilter) {
+            activeFilterBadge.textContent = `Menampilkan sesi tanggal hari ini (${targetDateFilter}): ${visibleCount} Peserta`;
+          } else if (selectedSession) {
+            activeFilterBadge.textContent = `Filter Sesi (${sessionFilter.value}): ${visibleCount} Peserta`;
+          } else {
+            activeFilterBadge.textContent = `Menampilkan ${visibleCount} Peserta`;
+          }
+        }
       }
 
-      // Klik kartu rekap sesi untuk memilih/membatalkan filter sesi
+      // Tombol Filter Hari Ini (Mengambil tanggal hari ini YYYY-MM-DD secara lokal)
+      todayBtn?.addEventListener('click', () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        
+        targetDateFilter = `${year}-${month}-${day}`;
+        sessionFilter.value = ''; // Reset dropdown sesi spesifik agar melihat semua sesi pada tanggal ini
+        filterTable();
+      });
+
+      // Tombol Reset Filter
+      resetFilterBtn?.addEventListener('click', () => {
+        targetDateFilter = null;
+        sessionFilter.value = '';
+        statusFilter.value = '';
+        searchInput.value = '';
+        filterTable();
+      });
+
+      // Klik Kartu Sesi
       sessionCards.forEach((card) => {
         card.addEventListener('click', () => {
           const title = card.getAttribute('data-session-title') || '';
+          targetDateFilter = null; // Reset filter tanggal saat memilih kartu tertentu
+          
           if (sessionFilter.value === title) {
-            sessionFilter.value = ''; // Reset jika diklik ulang
+            sessionFilter.value = '';
           } else {
             sessionFilter.value = title;
           }
@@ -356,7 +430,10 @@ try {
       });
 
       searchInput?.addEventListener('input', filterTable);
-      sessionFilter?.addEventListener('change', filterTable);
+      sessionFilter?.addEventListener('change', () => {
+        targetDateFilter = null; // Reset filter tanggal manual jika user memilih dropdown sesi secara eksplisit
+        filterTable();
+      });
       statusFilter?.addEventListener('change', filterTable);
     </script>
   </body>
