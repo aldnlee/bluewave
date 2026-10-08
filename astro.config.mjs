@@ -7,6 +7,9 @@ export default defineConfig({
   adapter: cloudflare({
     imageService: 'passthrough'
   }),
+  redirects: {
+    '/': '/wave' // Mengalihkan akses dari domain utama (/) langsung ke /wave
+  },
   vite: {
     plugins: [tailwindcss()]
   }
