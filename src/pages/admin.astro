@@ -197,17 +197,19 @@ try {
         <!-- Shortcut Hari H Button & Info Bar -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800 text-xs">
           <div class="flex items-center gap-2">
+            <!-- Tombol Filter Hari Ini dengan State Management Dinamis -->
             <button 
               type="button" 
               id="todayBtn"
-              class="px-3 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-600/30 transition font-bold flex items-center gap-1.5 cursor-pointer"
+              class="px-3 py-1.5 rounded-lg text-slate-300 bg-slate-800 border border-slate-700 hover:bg-slate-700 transition font-bold flex items-center gap-1.5 cursor-pointer"
             >
+              <span id="todayDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
               <span>⚡ Filter Sesi Hari Ini</span>
             </button>
             <button 
               type="button" 
               id="resetFilterBtn"
-              class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 hover:text-white transition font-medium cursor-pointer"
+              class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-400 border border-slate-700 hover:text-white hover:bg-slate-700/80 transition font-medium cursor-pointer"
             >
               Reset Filter
             </button>
@@ -332,12 +334,13 @@ try {
 
     </div>
 
-    <!-- Live Search & Date Filter Client-Side Script -->
+    <!-- Live Search & State-Aware Date Filter Script -->
     <script>
       const searchInput = document.getElementById('searchInput') as HTMLInputElement;
       const sessionFilter = document.getElementById('sessionFilter') as HTMLSelectElement;
       const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
-      const todayBtn = document.getElementById('todayBtn');
+      const todayBtn = document.getElementById('todayBtn') as HTMLButtonElement;
+      const todayDot = document.getElementById('todayDot');
       const resetFilterBtn = document.getElementById('resetFilterBtn');
       const activeFilterBadge = document.getElementById('activeFilterBadge');
       
@@ -345,6 +348,27 @@ try {
       const sessionCards = document.querySelectorAll<HTMLDivElement>('.session-card');
 
       let targetDateFilter: string | null = null;
+
+      // Update Tampilan Tombol "⚡ Filter Sesi Hari Ini" (Active vs Inactive State)
+      function updateTodayBtnState() {
+        if (targetDateFilter) {
+          // ACTIVE STATE: Hijau Menyala & Pulsing Indicator
+          todayBtn?.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
+          todayBtn?.classList.add('bg-emerald-600/20', 'text-emerald-300', 'border-emerald-500/50', 'ring-2', 'ring-emerald-500/30');
+          
+          if (todayDot) {
+            todayDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+          }
+        } else {
+          // INACTIVE / NORMAL STATE: Muted Slate
+          todayBtn?.classList.remove('bg-emerald-600/20', 'text-emerald-300', 'border-emerald-500/50', 'ring-2', 'ring-emerald-500/30');
+          todayBtn?.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
+          
+          if (todayDot) {
+            todayDot.className = 'w-2 h-2 rounded-full bg-slate-500';
+          }
+        }
+      }
 
       function filterTable() {
         const query = searchInput.value.toLowerCase().trim();
@@ -361,16 +385,9 @@ try {
           const status = (row.getAttribute('data-status') || '').toLowerCase();
           const rowDate = row.getAttribute('data-[#date]') || '';
 
-          // 1. Cek Kata Kunci Search
           const matchesQuery = !query || name.includes(query) || phone.includes(query) || email.includes(query);
-
-          // 2. Cek Filter Sesi
           const matchesSession = !selectedSession || session === selectedSession;
-
-          // 3. Cek Filter Status
           const matchesStatus = !selectedStatus || status === selectedStatus;
-
-          // 4. Cek Filter Tanggal Hari H (jika aktif)
           const matchesDate = !targetDateFilter || rowDate === targetDateFilter;
 
           if (matchesQuery && matchesSession && matchesStatus && matchesDate) {
@@ -381,10 +398,12 @@ try {
           }
         });
 
-        // Update keterangan status filter
+        updateTodayBtnState();
+
+        // Keterangan Status Filter
         if (activeFilterBadge) {
           if (targetDateFilter) {
-            activeFilterBadge.textContent = `Menampilkan sesi tanggal hari ini (${targetDateFilter}): ${visibleCount} Peserta`;
+            activeFilterBadge.textContent = `⚡ Sesi Hari Ini (${targetDateFilter}): ${visibleCount} Peserta`;
           } else if (selectedSession) {
             activeFilterBadge.textContent = `Filter Sesi (${sessionFilter.value}): ${visibleCount} Peserta`;
           } else {
@@ -393,19 +412,25 @@ try {
         }
       }
 
-      // Tombol Filter Hari Ini (Mengambil tanggal hari ini YYYY-MM-DD secara lokal)
+      // Toggle Klik Tombol Sesi Hari Ini
       todayBtn?.addEventListener('click', () => {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        
-        targetDateFilter = `${year}-${month}-${day}`;
-        sessionFilter.value = ''; // Reset dropdown sesi spesifik agar melihat semua sesi pada tanggal ini
+        if (targetDateFilter) {
+          // Jika sedang aktif, diklik lagi akan MATI (Toggle Off)
+          targetDateFilter = null;
+        } else {
+          // Jika mati, aktifkan filter tanggal hari ini (YYYY-MM-DD)
+          const now = new Date();
+          const year = now.getFullYear();
+          const month = String(now.getMonth() + 1).padStart(2, '0');
+          const day = String(now.getDate()).padStart(2, '0');
+          
+          targetDateFilter = `${year}-${month}-${day}`;
+          sessionFilter.value = ''; // Reset dropdown spesifik
+        }
         filterTable();
       });
 
-      // Tombol Reset Filter
+      // Reset Semua Filter
       resetFilterBtn?.addEventListener('click', () => {
         targetDateFilter = null;
         sessionFilter.value = '';
@@ -418,7 +443,7 @@ try {
       sessionCards.forEach((card) => {
         card.addEventListener('click', () => {
           const title = card.getAttribute('data-session-title') || '';
-          targetDateFilter = null; // Reset filter tanggal saat memilih kartu tertentu
+          targetDateFilter = null; // Matikan filter hari ini jika memilih kartu tertentu secara eksplisit
           
           if (sessionFilter.value === title) {
             sessionFilter.value = '';
@@ -431,7 +456,7 @@ try {
 
       searchInput?.addEventListener('input', filterTable);
       sessionFilter?.addEventListener('change', () => {
-        targetDateFilter = null; // Reset filter tanggal manual jika user memilih dropdown sesi secara eksplisit
+        targetDateFilter = null; // Matikan filter hari ini jika dropdown sesi diubah manual
         filterTable();
       });
       statusFilter?.addEventListener('change', filterTable);
