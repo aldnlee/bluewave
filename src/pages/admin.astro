@@ -99,7 +99,7 @@ try {
     <title>Admin Dashboard - Blue Wave Check-In</title>
   </head>
   <body class="bg-slate-950 text-[#fff] min-h-screen p-4 sm:p-6 font-sans selection:bg-[#005BDF] selection:text-white">
-    <div class="max-w-6xl mx-auto space-y-6">
+    <div class="max-w-6xl mx-auto space-y-5">
       
       <!-- Top Bar -->
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-900 p-6 rounded-2xl border border-[#005BDF]/30 shadow-xl">
@@ -128,61 +128,87 @@ try {
         </div>
       </div>
 
-      <!-- KARTU REKAP TIAP SESI LATIHAN -->
-      <div>
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">Rekap Tiap Sesi Latihan</h2>
-          <span class="text-xs text-slate-500">Klik kartu untuk filter tabel</span>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sessions.map((session) => {
-            const registered = session.total_registered || 0;
-            const checkedIn = session.total_checked_in || 0;
-            const percent = session.max_capacity > 0 
-              ? Math.min(Math.round((registered / session.max_capacity) * 100), 100) 
-              : 0;
+      <!-- COLLAPSIBLE / DROPDOWN REKAP SESI LATIHAN -->
+      <div class="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-lg transition-all">
+        <!-- Header Accordion -->
+        <button 
+          type="button" 
+          id="toggleSummaryBtn"
+          class="w-full px-5 py-3.5 flex items-center justify-between bg-slate-900 hover:bg-slate-800/80 transition cursor-pointer text-left"
+        >
+          <div class="flex items-center gap-3">
+            <span class="p-2 rounded-lg bg-[#005BDF]/20 text-[#005BDF]">
+              📊
+            </span>
+            <div>
+              <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">
+                Rekap Detail Sesi Latihan
+              </h2>
+              <p class="text-xs text-slate-400 mt-0.5">
+                Total {sessions.length} sesi terdaftar • Klik untuk menyembunyikan/menampilkan statistik per event
+              </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 hidden sm:inline" id="summaryToggleLabel">Buka Detail</span>
+            <svg id="summaryChevron" class="w-5 h-5 text-slate-400 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </button>
 
-            return (
-              <div 
-                class="session-card bg-slate-900 hover:border-[#005BDF]/80 transition cursor-pointer p-4 rounded-xl border border-slate-800 shadow-md flex flex-col justify-between"
-                data-session-title={session.title}
-                data-session-date={session.session_date}
-              >
-                <div>
-                  <div class="flex justify-between items-start gap-2">
-                    <h3 class="font-bold text-slate-100 text-sm">{session.title}</h3>
-                    <span class="text-[11px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono border border-slate-700">
-                      {session.session_date}
+        <!-- Body Grid Rekap (Collapsible) -->
+        <div id="summaryContent" class="hidden p-4 border-t border-slate-800 bg-slate-950/50">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {sessions.map((session) => {
+              const registered = session.total_registered || 0;
+              const checkedIn = session.total_checked_in || 0;
+              const percent = session.max_capacity > 0 
+                ? Math.min(Math.round((registered / session.max_capacity) * 100), 100) 
+                : 0;
+
+              return (
+                <div 
+                  class="session-card bg-slate-900 hover:border-[#005BDF]/80 transition cursor-pointer p-3.5 rounded-xl border border-slate-800 shadow-md flex flex-col justify-between"
+                  data-session-title={session.title}
+                  data-session-date={session.session_date}
+                >
+                  <div>
+                    <div class="flex justify-between items-start gap-2">
+                      <h3 class="font-bold text-slate-100 text-xs sm:text-sm line-clamp-1">{session.title}</h3>
+                      <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono border border-slate-700 shrink-0">
+                        {session.session_date}
+                      </span>
+                    </div>
+                    
+                    <div class="mt-2.5 flex items-baseline justify-between text-xs">
+                      <span class="text-slate-400">Total Pendaftar:</span>
+                      <span class="font-bold text-sm text-[#005BDF]">
+                        {registered} <span class="text-[11px] text-slate-400 font-normal">/ {session.max_capacity} kuota</span>
+                      </span>
+                    </div>
+
+                    <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                      <div 
+                        class={`h-full rounded-full ${percent >= 100 ? 'bg-rose-500' : 'bg-[#005BDF]'}`} 
+                        style={`width: ${percent}%;`}
+                      ></div>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 pt-2.5 border-t border-slate-800 flex justify-between items-center text-[11px]">
+                    <span class="text-emerald-400 font-semibold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block"></span>
+                      Checked-In: {checkedIn}
+                    </span>
+                    <span class="text-amber-400 font-semibold">
+                      Belum: {registered - checkedIn}
                     </span>
                   </div>
-                  
-                  <div class="mt-3 flex items-baseline justify-between text-xs">
-                    <span class="text-slate-400">Total Pendaftar:</span>
-                    <span class="font-bold text-base text-[#005BDF]">
-                      {registered} <span class="text-xs text-slate-400 font-normal">/ {session.max_capacity} kuota</span>
-                    </span>
-                  </div>
-
-                  <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
-                    <div 
-                      class={`h-full rounded-full ${percent >= 100 ? 'bg-rose-500' : 'bg-[#005BDF]'}`} 
-                      style={`width: ${percent}%;`}
-                    ></div>
-                  </div>
                 </div>
-
-                <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
-                  <span class="text-emerald-400 font-semibold flex items-center gap-1">
-                    <span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>
-                    Checked-In: {checkedIn}
-                  </span>
-                  <span class="text-amber-400 font-semibold">
-                    Belum: {registered - checkedIn}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -333,7 +359,7 @@ try {
 
     </div>
 
-    <!-- Live Search & URL Sync Script -->
+    <!-- Live Search, Collapsible & URL Sync Script -->
     <script>
       const searchInput = document.getElementById('searchInput') as HTMLInputElement;
       const sessionFilter = document.getElementById('sessionFilter') as HTMLSelectElement;
@@ -343,26 +369,41 @@ try {
       const resetFilterBtn = document.getElementById('resetFilterBtn');
       const activeFilterBadge = document.getElementById('activeFilterBadge');
       
+      const toggleSummaryBtn = document.getElementById('toggleSummaryBtn');
+      const summaryContent = document.getElementById('summaryContent');
+      const summaryChevron = document.getElementById('summaryChevron');
+      const summaryToggleLabel = document.getElementById('summaryToggleLabel');
+
       const rows = document.querySelectorAll<HTMLTableRowElement>('.participant-row');
       const sessionCards = document.querySelectorAll<HTMLDivElement>('.session-card');
       const forms = document.querySelectorAll<HTMLFormElement>('.checkin-form');
 
       let targetDateFilter: string | null = null;
 
-      // 1. Dapatkan parameter filter awal dari URL browser
+      // Toggle Accordion Rekap Sesi
+      toggleSummaryBtn?.addEventListener('click', () => {
+        const isHidden = summaryContent?.classList.contains('hidden');
+        if (isHidden) {
+          summaryContent?.classList.remove('hidden');
+          summaryChevron?.classList.add('rotate-180');
+          if (summaryToggleLabel) summaryToggleLabel.textContent = 'Tutup Detail';
+        } else {
+          summaryContent?.classList.add('hidden');
+          summaryChevron?.classList.remove('rotate-180');
+          if (summaryToggleLabel) summaryToggleLabel.textContent = 'Buka Detail';
+        }
+      });
+
       function loadFiltersFromURL() {
         const params = new URLSearchParams(window.location.search);
-        
         if (params.has('search')) searchInput.value = params.get('search') || '';
         if (params.has('session')) sessionFilter.value = params.get('session') || '';
         if (params.has('status')) statusFilter.value = params.get('status') || '';
         if (params.has('date')) targetDateFilter = params.get('date');
       }
 
-      // 2. Simpan parameter filter yang sedang aktif ke URL browser tanpa me-refresh halaman
       function updateURLParams() {
         const url = new URL(window.location.href);
-        
         if (searchInput.value.trim()) url.searchParams.set('search', searchInput.value.trim());
         else url.searchParams.delete('search');
 
@@ -377,7 +418,6 @@ try {
 
         window.history.replaceState({}, '', url.toString());
 
-        // Update atribut action pada semua form check-in agar saat POST tetap mempertahankan URL Query Params!
         forms.forEach(form => {
           form.action = url.search;
         });
@@ -437,7 +477,6 @@ try {
         }
       }
 
-      // Inisialisasi awal saat halaman selesai dimuat
       loadFiltersFromURL();
       filterTable();
 
