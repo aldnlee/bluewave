@@ -197,7 +197,6 @@ try {
         <!-- Shortcut Hari H Button & Info Bar -->
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800 text-xs">
           <div class="flex items-center gap-2">
-            <!-- Tombol Filter Hari Ini dengan State Management Dinamis -->
             <button 
               type="button" 
               id="todayBtn"
@@ -278,7 +277,7 @@ try {
                     data-phone={reg.phone_number} 
                     data-email={(reg.email || '').toLowerCase()}
                     data-session={sessionTitle.toLowerCase()}
-                    data-[#date]={sessionDate}
+                    data-date={sessionDate}
                     data-status={reg.is_checked_in ? 'checked-in' : 'belum'}
                   >
                     <td class="px-6 py-4">
@@ -309,7 +308,7 @@ try {
                       )}
                     </td>
                     <td class="px-6 py-4 text-center">
-                      <form method="POST">
+                      <form method="POST" class="checkin-form">
                         <input type="hidden" name="registration_id" value={reg.id} />
                         <input type="hidden" name="current_status" value={reg.is_checked_in.toString()} />
                         <button 
@@ -334,7 +333,7 @@ try {
 
     </div>
 
-    <!-- Live Search & State-Aware Date Filter Script -->
+    <!-- Live Search & URL Sync Script -->
     <script>
       const searchInput = document.getElementById('searchInput') as HTMLInputElement;
       const sessionFilter = document.getElementById('sessionFilter') as HTMLSelectElement;
@@ -346,27 +345,53 @@ try {
       
       const rows = document.querySelectorAll<HTMLTableRowElement>('.participant-row');
       const sessionCards = document.querySelectorAll<HTMLDivElement>('.session-card');
+      const forms = document.querySelectorAll<HTMLFormElement>('.checkin-form');
 
       let targetDateFilter: string | null = null;
 
-      // Update Tampilan Tombol "⚡ Filter Sesi Hari Ini" (Active vs Inactive State)
+      // 1. Dapatkan parameter filter awal dari URL browser
+      function loadFiltersFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        
+        if (params.has('search')) searchInput.value = params.get('search') || '';
+        if (params.has('session')) sessionFilter.value = params.get('session') || '';
+        if (params.has('status')) statusFilter.value = params.get('status') || '';
+        if (params.has('date')) targetDateFilter = params.get('date');
+      }
+
+      // 2. Simpan parameter filter yang sedang aktif ke URL browser tanpa me-refresh halaman
+      function updateURLParams() {
+        const url = new URL(window.location.href);
+        
+        if (searchInput.value.trim()) url.searchParams.set('search', searchInput.value.trim());
+        else url.searchParams.delete('search');
+
+        if (sessionFilter.value) url.searchParams.set('session', sessionFilter.value);
+        else url.searchParams.delete('session');
+
+        if (statusFilter.value) url.searchParams.set('status', statusFilter.value);
+        else url.searchParams.delete('status');
+
+        if (targetDateFilter) url.searchParams.set('date', targetDateFilter);
+        else url.searchParams.delete('date');
+
+        window.history.replaceState({}, '', url.toString());
+
+        // Update atribut action pada semua form check-in agar saat POST tetap mempertahankan URL Query Params!
+        forms.forEach(form => {
+          form.action = url.search;
+        });
+      }
+
       function updateTodayBtnState() {
         if (targetDateFilter) {
-          // ACTIVE STATE: Hijau Menyala & Pulsing Indicator
           todayBtn?.classList.remove('bg-slate-800', 'text-slate-300', 'border-slate-700');
           todayBtn?.classList.add('bg-emerald-600/20', 'text-emerald-300', 'border-emerald-500/50', 'ring-2', 'ring-emerald-500/30');
-          
-          if (todayDot) {
-            todayDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-          }
+          if (todayDot) todayDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
         } else {
-          // INACTIVE / NORMAL STATE: Muted Slate
           todayBtn?.classList.remove('bg-emerald-600/20', 'text-emerald-300', 'border-emerald-500/50', 'ring-2', 'ring-emerald-500/30');
           todayBtn?.classList.add('bg-slate-800', 'text-slate-300', 'border-slate-700');
-          
-          if (todayDot) {
-            todayDot.className = 'w-2 h-2 rounded-full bg-slate-500';
-          }
+          if (todayDot) todayDot.className = 'w-2 h-2 rounded-full bg-slate-500';
         }
       }
 
@@ -383,7 +408,7 @@ try {
           const email = (row.getAttribute('data-email') || '').toLowerCase();
           const session = (row.getAttribute('data-session') || '').toLowerCase();
           const status = (row.getAttribute('data-status') || '').toLowerCase();
-          const rowDate = row.getAttribute('data-[#date]') || '';
+          const rowDate = row.getAttribute('data-date') || '';
 
           const matchesQuery = !query || name.includes(query) || phone.includes(query) || email.includes(query);
           const matchesSession = !selectedSession || session === selectedSession;
@@ -399,8 +424,8 @@ try {
         });
 
         updateTodayBtnState();
+        updateURLParams();
 
-        // Keterangan Status Filter
         if (activeFilterBadge) {
           if (targetDateFilter) {
             activeFilterBadge.textContent = `⚡ Sesi Hari Ini (${targetDateFilter}): ${visibleCount} Peserta`;
@@ -412,25 +437,25 @@ try {
         }
       }
 
-      // Toggle Klik Tombol Sesi Hari Ini
+      // Inisialisasi awal saat halaman selesai dimuat
+      loadFiltersFromURL();
+      filterTable();
+
       todayBtn?.addEventListener('click', () => {
         if (targetDateFilter) {
-          // Jika sedang aktif, diklik lagi akan MATI (Toggle Off)
           targetDateFilter = null;
         } else {
-          // Jika mati, aktifkan filter tanggal hari ini (YYYY-MM-DD)
           const now = new Date();
           const year = now.getFullYear();
           const month = String(now.getMonth() + 1).padStart(2, '0');
           const day = String(now.getDate()).padStart(2, '0');
           
           targetDateFilter = `${year}-${month}-${day}`;
-          sessionFilter.value = ''; // Reset dropdown spesifik
+          sessionFilter.value = '';
         }
         filterTable();
       });
 
-      // Reset Semua Filter
       resetFilterBtn?.addEventListener('click', () => {
         targetDateFilter = null;
         sessionFilter.value = '';
@@ -439,11 +464,10 @@ try {
         filterTable();
       });
 
-      // Klik Kartu Sesi
       sessionCards.forEach((card) => {
         card.addEventListener('click', () => {
           const title = card.getAttribute('data-session-title') || '';
-          targetDateFilter = null; // Matikan filter hari ini jika memilih kartu tertentu secara eksplisit
+          targetDateFilter = null;
           
           if (sessionFilter.value === title) {
             sessionFilter.value = '';
@@ -456,7 +480,7 @@ try {
 
       searchInput?.addEventListener('input', filterTable);
       sessionFilter?.addEventListener('change', () => {
-        targetDateFilter = null; // Matikan filter hari ini jika dropdown sesi diubah manual
+        targetDateFilter = null;
         filterTable();
       });
       statusFilter?.addEventListener('change', filterTable);
