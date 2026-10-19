@@ -81,6 +81,8 @@ try {
       query = query.ilike('title', '%UI Half Marathon%');
     } else if (slug === 'cheering' || slug === 'cheering') {
       query = query.ilike('title', '%Cheering%');
+    } else if (slug === 'shakeout' || slug === 'shakeout') {
+      query = query.ilike('title', '%Shakeout%');
     } else {
       // Fallback: Tampilkan sesi reguler Wave
       query = query.ilike('title', '%Wave%');
