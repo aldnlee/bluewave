@@ -15,7 +15,7 @@ const { event } = Astro.params;
 const slug = (event || '').toLowerCase();
 const isBlueWaveDay = slug === 'bluewaveday' || slug === 'blue-wave-day';
 
-let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
+let sessions: Array<{ id: string; title: string; session_date: string }> = [];
 
 // Format tanggal hari ini (YYYY-MM-DD)
 const today = new Date().toISOString().split('T')[0];
@@ -81,13 +81,13 @@ if (Astro.request.method === 'POST') {
   }
 }
 
-// FETCH SESSIONS BERDASARKAN PARAMETER URL
+// FETCH SESSIONS BERDASARKAN PARAMETER URL (Tanpa mengekspos max_capacity ke user)
 try {
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(event || '');
 
   let query = supabase
     .from('sessions')
-    .select('id, title, session_date, max_capacity')
+    .select('id, title, session_date')
     .gte('session_date', today)
     .order('session_date', { ascending: true })
     .order('title', { ascending: true });
@@ -206,20 +206,15 @@ const eventTitle = isBlueWaveDay
                       {groupedByDate[date].map((act) => {
                         const cleanTitle = act.title.replace(/^Blue Wave Day\s*-\s*Day\s*\d+\s*:\s*/i, '');
                         return (
-                          <label class="flex items-start gap-3 p-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 cursor-pointer transition">
+                          <label class="flex items-center gap-3 p-3 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 cursor-pointer transition">
                             <input 
                               type="checkbox" 
                               name="session_id" 
                               value={act.id} 
-                              class="bwd-checkbox mt-0.5 w-4 h-4 rounded text-[#005BDF] bg-slate-700 border-slate-600 focus:ring-[#005BDF]"
+                              class="bwd-checkbox w-4 h-4 rounded text-[#005BDF] bg-slate-700 border-slate-600 focus:ring-[#005BDF] shrink-0"
                             />
-                            <div class="flex-1">
-                              <div class="text-xs font-bold text-slate-100 leading-snug">
-                                {cleanTitle}
-                              </div>
-                              <div class="text-[11px] text-slate-400 mt-0.5">
-                                Kuota: {act.max_capacity} peserta
-                              </div>
+                            <div class="text-xs font-bold text-slate-100 leading-snug">
+                              {cleanTitle}
                             </div>
                           </label>
                         );
