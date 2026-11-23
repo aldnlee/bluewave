@@ -10,8 +10,10 @@ const locals = Astro.locals as any;
 const runtimeEnv = locals?.runtime?.env || locals?.cloudflare?.env;
 const supabase = getSupabase(runtimeEnv);
 
-// Tangkap parameter "event" dari URL (misal: /rtuihm, /indomaret, /cheering, atau UUID)
+// Tangkap parameter "event" dari URL (misal: /bluewaveday, /wave, /indomaret)
 const { event } = Astro.params;
+const slug = (event || '').toLowerCase();
+const isBlueWaveDay = slug === 'bluewaveday' || slug === 'blue-wave-day';
 
 let sessions: Array<{ id: string; title: string; session_date: string; max_capacity: number }> = [];
 
@@ -23,31 +25,49 @@ if (Astro.request.method === 'POST') {
   try {
     const formData = await Astro.request.formData();
 
-    const sessionId = formData.get('session_id')?.toString()?.trim();
+    // Ambil semua session_id yang dipilih (bisa 1 dari dropdown, atau banyak dari checkbox Blue Wave Day)
+    const sessionIds = formData.getAll('session_id').map((id) => id.toString().trim()).filter(Boolean);
     const fullName = formData.get('full_name')?.toString()?.trim();
     const phoneNumber = formData.get('phone_number')?.toString()?.trim();
     const email = formData.get('email')?.toString()?.trim();
-    const tier = event || 'bluewave'; // Menyimpan nama slug/event sebagai tier
+    const tier = slug || 'bluewave';
 
-    if (!sessionId || sessionId === '') {
-      message = 'Silakan pilih sesi latihan terlebih dahulu!';
+    if (sessionIds.length === 0) {
+      message = 'Silakan pilih minimal 1 sesi latihan terlebih dahulu!';
     } else if (fullName && phoneNumber && email) {
-      // Panggil Stored Procedure register_bluewave_session
-      const { data, error } = await supabase.rpc('register_bluewave_session', {
-        p_session_id: sessionId,
-        p_full_name: fullName,
-        p_phone_number: phoneNumber,
-        p_tier: tier,
-        p_email: email,
-      });
+      const failedMessages: string[] = [];
+      let successCount = 0;
 
-      if (error) {
-        message = `Gagal memproses pendaftaran: ${error.message}`;
-      } else if (data && !data.success) {
-        message = data.message;
-      } else if (data && data.success) {
-        message = data.message || 'Pendaftaran berhasil!';
+      // Loop semua sesi yang dipilih (1 sesi untuk reguler, atau multi-sesi untuk Blue Wave Day)
+      for (const sId of sessionIds) {
+        const { data, error } = await supabase.rpc('register_bluewave_session', {
+          p_session_id: sId,
+          p_full_name: fullName,
+          p_phone_number: phoneNumber,
+          p_tier: tier,
+          p_email: email,
+        });
+
+        if (error) {
+          failedMessages.push(error.message);
+        } else if (data && !data.success) {
+          failedMessages.push(data.message);
+        } else if (data && data.success) {
+          successCount++;
+        }
+      }
+
+      if (successCount > 0) {
         isSuccess = true;
+        if (isBlueWaveDay) {
+          message = `Pendaftaran berhasil untuk ${successCount} sesi Blue Wave Day!${
+            failedMessages.length > 0 ? ` (Catatan: ${failedMessages.join(', ')})` : ''
+          }`;
+        } else {
+          message = 'Pendaftaran berhasil!';
+        }
+      } else {
+        message = failedMessages.join(' | ') || 'Gagal memproses pendaftaran.';
       }
     } else {
       message = 'Harap isi semua kolom wajib!';
@@ -59,34 +79,33 @@ if (Astro.request.method === 'POST') {
 
 // FETCH SESSIONS BERDASARKAN PARAMETER URL
 try {
-  // Cek apakah URL berupa format UUID
   const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(event || '');
 
   let query = supabase
     .from('sessions')
     .select('id, title, session_date, max_capacity')
     .gte('session_date', today)
-    .order('session_date', { ascending: true });
+    .order('session_date', { ascending: true })
+    .order('title', { ascending: true });
 
   if (isUUID) {
-    // Jika URL berupa UUID spesifik
     query = query.eq('id', event);
+  } else if (slug === 'indomaret' || slug === 'indomaret-run') {
+    query = query.ilike('title', '%Indomaret%');
+  } else if (isBlueWaveDay) {
+    // Hanya mengambil sesi yang diawali / mengandung "Blue Wave Day"
+    query = query.ilike('title', '%Blue Wave Day%');
+  } else if (slug === 'cheering') {
+    query = query.ilike('title', '%Cheering%');
+  } else if (slug === 'shakeout') {
+    query = query.ilike('title', '%Shakeout%');
   } else {
-    // Jika URL berupa slug kata kunci
-    const slug = (event || '').toLowerCase();
-
-    if (slug === 'indomaret' || slug === 'indomaret-run') {
-      query = query.ilike('title', '%Indomaret%');
-    } else if (slug === 'bluewaveday' || slug === 'bluewaveday') {
-      query = query.ilike('title', '%Blue Wave Day (27-29 NOV)%');
-    } else if (slug === 'cheering' || slug === 'cheering') {
-      query = query.ilike('title', '%Cheering%');
-    } else if (slug === 'shakeout' || slug === 'shakeout') {
-      query = query.ilike('title', '%Shakeout%');
-    } else {
-      // Fallback: Tampilkan sesi reguler Wave
-      query = query.ilike('title', '%Wave%');
-    }
+    // Fallback (/wave): Ambil sesi reguler Wave dan kecualikan Blue Wave Day & event khusus
+    query = query
+      .ilike('title', '%Wave%')
+      .not('title', 'ilike', '%Blue Wave Day%')
+      .not('title', 'ilike', '%Indomaret%')
+      .not('title', 'ilike', '%Shakeout%');
   }
 
   const { data, error } = await query;
@@ -100,24 +119,116 @@ try {
   console.error('Init Error:', e.message);
 }
 
-// Display Name untuk Header
-const eventTitle = (event || 'BLUE WAVE').replace('-', ' ').toUpperCase();
+// Grouping per tanggal khusus untuk tampilan Blue Wave Day
+const groupedByDate = sessions.reduce((acc, session) => {
+  const date = session.session_date;
+  if (!acc[date]) acc[date] = [];
+  acc[date].push(session);
+  return acc;
+}, {} as Record<string, typeof sessions>);
+
+const sortedDates = Object.keys(groupedByDate).sort();
+
+// Helper format tanggal ramah baca (misal: Fri, Nov 27)
+function formatDayLabel(dateStr: string) {
+  const d = new Date(`${dateStr}T00:00:00`);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+const eventTitle = isBlueWaveDay
+  ? 'BLUE WAVE DAY'
+  : (event || 'BLUE WAVE').replace(/-/g, ' ').toUpperCase();
 ---
 
 <html lang="id">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BLUE WAVE REGISTRATION</title>
+    <title>REGISTRASI - {eventTitle}</title>
   </head>
   <body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4 font-sans selection:bg-[#005BDF] selection:text-white">
     <div class="max-w-lg w-full bg-slate-800/90 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-2xl border border-slate-700">
       
-      <!-- Header & Warning Note -->
+      <!-- Header -->
       <div class="text-center mb-6">
-        <h1 class="text-3xl font-black text-[#005BDF] tracking-tight">BLUE WAVE REGISTRATION</h1>
+        <h1 class="text-3xl font-black text-[#005BDF] tracking-tight">{eventTitle} REGISTRATION</h1>
+        {isBlueWaveDay && (
+          <p class="text-xs text-slate-300 mt-2 leading-relaxed">
+            Zona Blu x Gofit • <span class="text-blue-400 font-semibold">#AdeminProgresmu</span> & <span class="text-blue-400 font-semibold">#OnTerus</span>
+          </p>
+        )}
 
         <!-- POPPING SPECIAL CHALLENGE CARD -->
+        <div class={`relative mt-5 overflow-hidden rounded-2xl border transition duration-300 p-4 sm:p-5 text-left shadow-lg ${
+          isSuccess 
+            ? 'border-[#005BDF] bg-gradient-to-br from-[#005BDF]/30 via-slate-800/95 to-slate-900 shadow-[#005BDF]/30' 
+            : 'border-slate-700 bg-slate-800/60 shadow-black/20'
+        }`}>
+          
+          {isSuccess && (
+            <div class="pointer-events-none absolute -top-8 -right-8 h-28 w-28 rounded-full bg-[#005BDF]/40 blur-2xl animate-pulse"></div>
+          )}
+
+          <div class="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+            <div class="space-y-1.5 flex-1">
+              <div class="flex items-center gap-2">
+                <span class={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm ${
+                  isSuccess ? 'bg-[#005BDF]' : 'bg-slate-700 text-slate-300'
+                }`}>
+                  <span class={`inline-block h-1.5 w-1.5 rounded-full ${isSuccess ? 'bg-cyan-300 animate-pulse' : 'bg-slate-400'}`}></span>
+                  Special Challenge
+                </span>
+
+                {isSuccess ? (
+                  <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                    ✓ Akses Terbuka
+                  </span>
+                ) : (
+                  <span class="text-[11px] font-medium text-amber-400/90 flex items-center gap-1">
+                    🔒 Terkunci
+                  </span>
+                )}
+              </div>
+              
+              <h3 class="text-base font-extrabold text-white tracking-tight">
+                GRAB YOUR MILES
+              </h3>
+
+              <p class="text-xs text-slate-300 leading-relaxed">
+                {isSuccess 
+                  ? 'Registrasi sesi selesai! Silakan lanjutkan membuat akun resmi untuk mengumpulkan poin dan jarak tempuh Anda.' 
+                  : 'Selesaikan pendaftaran sesi latihan di bawah terlebih dahulu untuk membuka akses tantangan ini.'}
+              </p>
+            </div>
+
+            <div class="pt-1 sm:pt-0">
+              {isSuccess ? (
+                <a 
+                  href="https://grab.gofit.id" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-[#005BDF] hover:bg-[#004bb8] text-white text-xs font-bold shadow-lg shadow-[#005BDF]/30 transition transform hover:-translate-y-0.5 active:translate-y-0 animate-bounce"
+                >
+                  <span>Daftar Grab</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </a>
+              ) : (
+                <button 
+                  type="button" 
+                  disabled 
+                  class="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto px-4 py-2.5 rounded-xl bg-slate-700/60 text-slate-400 border border-slate-600/50 text-xs font-semibold cursor-not-allowed opacity-75"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-amber-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span>Daftar Sesi Dulu</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Alert Message -->
@@ -133,27 +244,82 @@ const eventTitle = (event || 'BLUE WAVE').replace('-', ' ').toUpperCase();
 
       <form method="POST" id="registrationForm" class="space-y-5">
         
-        <!-- Pilihan Sesi -->
-        <div>
-          <label for="session_id" class="block text-sm font-medium mb-2 text-slate-300">
-            Pilih Sesi Latihan <span class="text-rose-400">*</span>
-          </label>
-          <select 
-            id="session_id" 
-            name="session_id" 
-            required 
-            class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-slate-100"
-          >
-            <option value="" class="bg-slate-800 text-slate-300">
-              {sessions.length > 0 ? '-- Pilih Sesi --' : '-- Tidak ada sesi aktif untuk event ini --'}
-            </option>
-            {sessions.map((session) => (
-              <option value={session.id} class="bg-slate-800 text-slate-100">
-                {session.title} ({session.session_date})
+        <!-- Pilihan Sesi: Multi-Select per Hari untuk Blue Wave Day vs Dropdown untuk Reguler -->
+        {isBlueWaveDay ? (
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <label class="block text-sm font-medium text-slate-300">
+                Pilih Aktivitas <span class="text-rose-400">*</span>
+              </label>
+              <span class="text-[11px] text-blue-400 font-medium">Bisa pilih lebih dari 1 sesi</span>
+            </div>
+
+            {sortedDates.length === 0 ? (
+              <div class="p-4 rounded-xl bg-slate-700/40 border border-slate-600 text-xs text-slate-400 text-center">
+                Belum ada jadwal Blue Wave Day yang aktif.
+              </div>
+            ) : (
+              <div class="space-y-3">
+                {sortedDates.map((date, idx) => (
+                  <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-700/80 space-y-2.5">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <span class="text-xs font-extrabold uppercase tracking-wider text-[#005BDF]">
+                        DAY {idx + 1} • {formatDayLabel(date)}
+                      </span>
+                      <span class="text-[11px] font-mono text-slate-400">Zona Blu x Gofit</span>
+                    </div>
+
+                    <div class="space-y-2">
+                      {groupedByDate[date].map((act) => {
+                        // Rapikan tampilan judul agar tidak berulang tulisan "Blue Wave Day - Day X:"
+                        const cleanTitle = act.title.replace(/^Blue Wave Day\s*-\s*Day\s*\d+\s*:\s*/i, '');
+                        return (
+                          <label class="flex items-start gap-3 p-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/70 cursor-pointer transition">
+                            <input 
+                              type="checkbox" 
+                              name="session_id" 
+                              value={act.id} 
+                              class="bwd-checkbox mt-0.5 w-4 h-4 rounded text-[#005BDF] bg-slate-700 border-slate-600 focus:ring-[#005BDF]"
+                            />
+                            <div class="flex-1">
+                              <div class="text-xs font-bold text-slate-100 leading-snug">
+                                {cleanTitle}
+                              </div>
+                              <div class="text-[11px] text-slate-400 mt-0.5">
+                                Kuota: {act.max_capacity} peserta
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div>
+            <label for="session_id" class="block text-sm font-medium mb-2 text-slate-300">
+              Pilih Sesi Latihan <span class="text-rose-400">*</span>
+            </label>
+            <select 
+              id="session_id" 
+              name="session_id" 
+              required 
+              class="w-full px-4 py-2.5 bg-slate-700/60 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#005BDF] text-slate-100"
+            >
+              <option value="" class="bg-slate-800 text-slate-300">
+                {sessions.length > 0 ? '-- Pilih Sesi --' : '-- Tidak ada sesi aktif untuk event ini --'}
               </option>
-            ))}
-          </select>
-        </div>
+              {sessions.map((session) => (
+                <option value={session.id} class="bg-slate-800 text-slate-100">
+                  {session.title} ({session.session_date})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <!-- Nama Lengkap -->
         <div>
@@ -268,28 +434,49 @@ const eventTitle = (event || 'BLUE WAVE').replace('-', ' ').toUpperCase();
     <script>
       const waRadios = document.querySelectorAll<HTMLInputElement>('.wa-radio');
       const confirmRadios = document.querySelectorAll<HTMLInputElement>('.wa-confirm-radio');
+      const bwdCheckboxes = document.querySelectorAll<HTMLInputElement>('.bwd-checkbox');
       const section2 = document.getElementById('section2JoinGroup');
       const submitBtn = document.getElementById('submitBtn') as HTMLButtonElement;
+      const form = document.getElementById('registrationForm') as HTMLFormElement;
 
       function updateFormFlow() {
         const selectedWa = document.querySelector<HTMLInputElement>('.wa-radio:checked')?.value;
         const selectedConfirm = document.querySelector<HTMLInputElement>('.wa-confirm-radio:checked')?.value;
+
+        // Validasi minimal 1 checkbox dicentang jika berada di mode Blue Wave Day
+        const hasCheckboxes = bwdCheckboxes.length > 0;
+        const anyChecked = Array.from(bwdCheckboxes).some((cb) => cb.checked);
+
+        if (hasCheckboxes && !anyChecked) {
+          submitBtn.disabled = true;
+          return;
+        }
 
         if (selectedWa === 'sudah') {
           section2?.classList.add('hidden');
           submitBtn.disabled = false;
         } else if (selectedWa === 'belum') {
           section2?.classList.remove('hidden');
-          if (selectedConfirm === 'sudah') {
-            submitBtn.disabled = false;
-          } else {
-            submitBtn.disabled = true;
-          }
+          submitBtn.disabled = selectedConfirm !== 'sudah';
+        } else {
+          submitBtn.disabled = true;
         }
       }
 
       waRadios.forEach((radio) => radio.addEventListener('change', updateFormFlow));
       confirmRadios.forEach((radio) => radio.addEventListener('change', updateFormFlow));
+      bwdCheckboxes.forEach((cb) => cb.addEventListener('change', updateFormFlow));
+
+      // Double check saat submit
+      form?.addEventListener('submit', (e) => {
+        if (bwdCheckboxes.length > 0) {
+          const anyChecked = Array.from(bwdCheckboxes).some((cb) => cb.checked);
+          if (!anyChecked) {
+            e.preventDefault();
+            alert('Silakan pilih minimal 1 aktivitas Blue Wave Day terlebih dahulu!');
+          }
+        }
+      });
 
       updateFormFlow();
     </script>
